@@ -3,7 +3,9 @@ import { DistanceSelector } from "./components/DistanceSelector";
 import { ResultCard } from "./components/ResultCard";
 import { Footer } from "./components/Footer";
 import { calculateRunResult } from "./utils/calculations";
-import { Trophy, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+
+const ACCENT = "#FF5A1F";
 
 export default function App() {
   const [distance, setDistance] = useState("10");
@@ -69,34 +71,59 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-white">
-      <div className="container mx-auto px-4 py-10 md:py-16 max-w-md">
+    <div className="min-h-screen text-white" style={{ backgroundColor: "#07080C", fontFamily: "var(--font-body)" }}>
+      <div className="mx-auto px-5 py-12 md:py-16" style={{ maxWidth: 460 }}>
         {!result ? (
-          <div className="space-y-8 animate-in fade-in duration-500">
+          <div className="space-y-3 animate-in fade-in duration-500">
+
             {/* Header */}
-            <div className="text-center space-y-3">
-              <div className="flex items-center justify-center gap-3">
-                <div className="relative">
-                  <Trophy size={38} className="text-[#00CED1]" />
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#00CED1] rounded-full animate-ping opacity-75" />
+            <div className="mb-10">
+              <div className="flex items-center gap-3.5 mb-2.5">
+                <div
+                  className="relative flex items-center justify-center flex-shrink-0 rounded-[10px]"
+                  style={{
+                    width: 46, height: 46,
+                    background: "rgba(255,90,31,0.1)",
+                    border: "1px solid rgba(255,90,31,0.22)",
+                    color: ACCENT,
+                  }}
+                >
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span
+                    className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full"
+                    style={{ background: ACCENT }}
+                  >
+                    <span
+                      className="absolute inset-0 rounded-full animate-ping opacity-60"
+                      style={{ background: ACCENT }}
+                    />
+                  </span>
                 </div>
-                <h1 className="text-5xl tracking-tight font-light">
-                  Run<span className="text-[#00CED1] font-semibold">Rank</span>
+                <h1
+                  className="leading-none tracking-wide"
+                  style={{ fontFamily: "var(--font-display)", fontSize: 54, color: "#E6E8F0" }}
+                >
+                  RUN<span style={{ color: ACCENT }}>RANK</span>
                 </h1>
               </div>
-              <p className="text-zinc-400 text-sm">
+              <p className="text-sm pl-[60px]" style={{ color: "#4E5468" }}>
                 Classe ton niveau comme sur League of Legends
               </p>
             </div>
 
-            {/* Form */}
-            <form
-              onSubmit={handleCalculate}
-              className="space-y-6 bg-zinc-900/50 backdrop-blur-sm rounded-2xl border border-zinc-800 p-7"
+            {/* Form Card */}
+            <div
+              className="rounded-2xl p-7 space-y-7"
+              style={{ background: "#0C0E13", border: "1px solid #1A1D26" }}
             >
               {/* Distance */}
               <div className="space-y-3">
-                <label className="block text-zinc-400 text-xs font-medium uppercase tracking-widest">
+                <label
+                  className="block text-[10px] font-semibold uppercase tracking-[0.12em]"
+                  style={{ color: "#4E5468" }}
+                >
                   Distance
                 </label>
                 <DistanceSelector value={distance} onChange={setDistance} />
@@ -104,53 +131,67 @@ export default function App() {
 
               {/* Time */}
               <div className="space-y-3">
-                <label className="block text-zinc-400 text-xs font-medium uppercase tracking-widest">
+                <label
+                  className="block text-[10px] font-semibold uppercase tracking-[0.12em]"
+                  style={{ color: "#4E5468" }}
+                >
                   Ton temps
                 </label>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1.5">
-                    <input
-                      type="number"
-                      min="0"
-                      max="24"
-                      placeholder="0"
-                      value={hours}
-                      onChange={(e) => handleHoursChange(e.target.value)}
-                      className="w-full px-3 py-3.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-center text-lg focus:outline-none focus:border-[#00CED1] focus:ring-1 focus:ring-[#00CED1]/30 transition-colors placeholder:text-zinc-600"
-                    />
-                    <p className="text-center text-[11px] text-zinc-600">heures</p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <input
-                      ref={minutesRef}
-                      type="number"
-                      min="0"
-                      max="59"
-                      placeholder="0"
-                      value={minutes}
-                      onChange={(e) => handleMinutesChange(e.target.value)}
-                      className="w-full px-3 py-3.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-center text-lg focus:outline-none focus:border-[#00CED1] focus:ring-1 focus:ring-[#00CED1]/30 transition-colors placeholder:text-zinc-600"
-                    />
-                    <p className="text-center text-[11px] text-zinc-600">minutes</p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <input
-                      ref={secondsRef}
-                      type="number"
-                      min="0"
-                      max="59"
-                      placeholder="0"
-                      value={seconds}
-                      onChange={(e) => setSeconds(e.target.value)}
-                      className="w-full px-3 py-3.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-center text-lg focus:outline-none focus:border-[#00CED1] focus:ring-1 focus:ring-[#00CED1]/30 transition-colors placeholder:text-zinc-600"
-                    />
-                    <p className="text-center text-[11px] text-zinc-600">secondes</p>
-                  </div>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {[
+                    { id: "hours", val: hours, onChange: handleHoursChange, ref: undefined, max: 24, label: "Heures" },
+                    { id: "minutes", val: minutes, onChange: handleMinutesChange, ref: minutesRef, max: 59, label: "Minutes" },
+                    { id: "seconds", val: seconds, onChange: (v: string) => setSeconds(v), ref: secondsRef, max: 59, label: "Secondes" },
+                  ].map(({ id, val, onChange, ref, max, label }) => (
+                    <div key={id} className="flex flex-col items-center gap-2">
+                      <input
+                        ref={ref}
+                        type="number"
+                        min="0"
+                        max={max}
+                        placeholder="00"
+                        value={val}
+                        onChange={(e) => onChange(e.target.value)}
+                        className="w-full rounded-[10px] text-center transition-all duration-150"
+                        style={{
+                          background: "rgba(255,255,255,0.025)",
+                          border: "1px solid #1A1D26",
+                          color: "#E6E8F0",
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 28,
+                          fontWeight: 500,
+                          padding: "14px 8px",
+                          outline: "none",
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = ACCENT;
+                          e.currentTarget.style.boxShadow = "0 0 0 3px rgba(255,90,31,0.1)";
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = "#1A1D26";
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                      />
+                      <span
+                        className="text-[10px] font-semibold uppercase tracking-[0.08em]"
+                        style={{ color: "#4E5468" }}
+                      >
+                        {label}
+                      </span>
+                    </div>
+                  ))}
                 </div>
 
                 {error && (
-                  <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2.5">
-                    <AlertCircle size={14} className="shrink-0" />
+                  <div
+                    className="flex items-center gap-2 text-sm rounded-lg px-3 py-2.5"
+                    style={{
+                      color: "#F87171",
+                      background: "rgba(239,68,68,0.07)",
+                      border: "1px solid rgba(239,68,68,0.18)",
+                    }}
+                  >
+                    <AlertCircle size={13} className="shrink-0" />
                     {error}
                   </div>
                 )}
@@ -160,22 +201,45 @@ export default function App() {
               <button
                 type="submit"
                 disabled={isCalculating}
-                className="w-full py-4 bg-gradient-to-r from-[#00CED1] to-[#00B4D8] hover:from-[#00B4D8] hover:to-[#0096C7] disabled:opacity-60 text-white rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2.5 font-medium text-base"
+                onClick={handleCalculate}
+                className="w-full rounded-[10px] font-semibold text-[15px] text-white transition-all duration-150 flex items-center justify-center gap-2.5 disabled:opacity-55"
+                style={{
+                  background: ACCENT,
+                  padding: "16px",
+                  letterSpacing: "0.02em",
+                  fontFamily: "var(--font-body)",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isCalculating) {
+                    e.currentTarget.style.background = "#E8491A";
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(255,90,31,0.22)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = ACCENT;
+                  e.currentTarget.style.transform = "none";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
               >
                 {isCalculating ? (
                   <>
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span
+                      className="w-4 h-4 border-2 rounded-full animate-spin"
+                      style={{ borderColor: "rgba(255,255,255,0.25)", borderTopColor: "white" }}
+                    />
                     Calcul en cours…
                   </>
                 ) : (
                   "Calculer mon rang"
                 )}
               </button>
-            </form>
+            </div>
 
-            <p className="text-center text-zinc-600 text-xs">
+            <p className="text-center text-xs" style={{ color: "#4E5468", paddingTop: 4 }}>
               Laisse les heures à 0 si tu cours moins d'1 heure
             </p>
+
             <Footer />
           </div>
         ) : (

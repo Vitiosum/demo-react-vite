@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Clock, Gauge, TrendingUp, Share2, Check, ChevronRight, RotateCcw } from 'lucide-react';
-import { RankBadge, RankType, rankConfigs } from './RankBadge';
-import { getNextRank } from '../utils/calculations';
+import { useState } from "react";
+import { Share2, Check, TrendingUp, RotateCcw } from "lucide-react";
+import { RankBadge, RankType, rankConfigs } from "./RankBadge";
+import { getNextRank } from "../utils/calculations";
 
 interface ResultCardProps {
   distance: string;
@@ -12,15 +12,15 @@ interface ResultCardProps {
   onReset: () => void;
 }
 
+const distanceLabels: Record<string, string> = {
+  "5":  "5 km",
+  "10": "10 km",
+  "21": "21 km (Semi)",
+  "42": "42 km (Marathon)",
+};
+
 export function ResultCard({ distance, time, pace, percentile, rank, onReset }: ResultCardProps) {
   const [copied, setCopied] = useState(false);
-
-  const distanceLabels: Record<string, string> = {
-    '5': '5 km',
-    '10': '10 km',
-    '21': '21 km (Semi)',
-    '42': '42 km (Marathon)',
-  };
 
   const nextRankInfo = getNextRank(rank);
   const rankColor = rankConfigs[rank].color;
@@ -29,7 +29,7 @@ export function ResultCard({ distance, time, pace, percentile, rank, onReset }: 
   const handleShare = () => {
     const text = `🏃 ${distanceLabels[distance]} en ${time} · Allure ${pace}/km · Rang ${rank} (Top ${percentile}%) #RunRank`;
     if (navigator.share) {
-      navigator.share({ title: 'Mon rang RunRank', text });
+      navigator.share({ title: "Mon rang RunRank", text });
     } else {
       navigator.clipboard.writeText(text);
       setCopied(true);
@@ -37,95 +37,165 @@ export function ResultCard({ distance, time, pace, percentile, rank, onReset }: 
     }
   };
 
-  return (
-    <div className="w-full max-w-md mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+  const cardStyle = { background: "#0C0E13", border: "1px solid #1A1D26" };
 
-      {/* Rank Badge */}
-      <div className="bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-zinc-800 overflow-hidden">
+  return (
+    <div
+      className="w-full space-y-2.5 animate-in fade-in slide-in-from-bottom-4 duration-700"
+      style={{ maxWidth: 460, margin: "0 auto" }}
+    >
+
+      {/* Rank Hero */}
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{
+          ...cardStyle,
+          borderTop: `3px solid ${rankColor}`,
+        }}
+      >
         <RankBadge rank={rank} size="large" />
       </div>
 
       {/* Percentile bar */}
-      <div className="bg-zinc-900/80 backdrop-blur-sm rounded-xl border border-zinc-800 p-5 space-y-3">
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-zinc-400">Position parmi les coureurs</span>
-          <span className="font-semibold" style={{ color: rankColor }}>Top {percentile}%</span>
+      <div className="rounded-2xl p-5 space-y-3" style={cardStyle}>
+        <div className="flex justify-between items-center">
+          <span
+            className="text-[10px] font-semibold uppercase tracking-[0.1em]"
+            style={{ color: "#4E5468" }}
+          >
+            Position parmi les coureurs
+          </span>
+          <span
+            className="text-sm font-medium"
+            style={{ fontFamily: "var(--font-mono)", color: rankColor }}
+          >
+            Top {percentile}%
+          </span>
         </div>
-        <div className="h-2.5 bg-zinc-800 rounded-full overflow-hidden">
+        <div
+          className="h-1.5 rounded-full overflow-hidden"
+          style={{ background: "rgba(255,255,255,0.06)" }}
+        >
           <div
             className="h-full rounded-full transition-all duration-1000 ease-out"
             style={{
               width: `${progressPercent}%`,
-              background: `linear-gradient(90deg, ${rankColor}60, ${rankColor})`,
-              boxShadow: `0 0 8px ${rankColor}50`,
+              background: `linear-gradient(90deg, ${rankColor}50, ${rankColor})`,
+              boxShadow: `0 0 10px ${rankColor}40`,
             }}
           />
         </div>
-        <div className="flex justify-between text-[11px] text-zinc-600">
+        <div className="flex justify-between text-[10px]" style={{ color: "#4E5468", opacity: 0.6 }}>
           <span>Iron</span>
           <span>Challenger</span>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-zinc-900/80 backdrop-blur-sm rounded-xl border border-zinc-800 p-5 space-y-2">
-          <div className="flex items-center gap-1.5 text-zinc-500 text-xs uppercase tracking-wide">
-            <Clock size={13} />
-            Temps
+      <div className="grid grid-cols-2 gap-2.5">
+        {[
+          {
+            icon: (
+              <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+              </svg>
+            ),
+            label: "Temps",
+            value: time,
+            sub: distanceLabels[distance],
+          },
+          {
+            icon: (
+              <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+            ),
+            label: "Allure",
+            value: pace,
+            sub: "min / km",
+          },
+        ].map(({ icon, label, value, sub }) => (
+          <div key={label} className="rounded-2xl p-5 space-y-2.5" style={cardStyle}>
+            <div
+              className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em]"
+              style={{ color: "#4E5468" }}
+            >
+              {icon}
+              {label}
+            </div>
+            <p
+              className="leading-none"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 30,
+                fontWeight: 500,
+                color: "#E6E8F0",
+              }}
+            >
+              {value}
+            </p>
+            <p className="text-[11px]" style={{ color: "#4E5468" }}>{sub}</p>
           </div>
-          <p className="text-2xl text-white font-light">{time}</p>
-          <p className="text-xs text-zinc-500">{distanceLabels[distance]}</p>
-        </div>
-
-        <div className="bg-zinc-900/80 backdrop-blur-sm rounded-xl border border-zinc-800 p-5 space-y-2">
-          <div className="flex items-center gap-1.5 text-zinc-500 text-xs uppercase tracking-wide">
-            <Gauge size={13} />
-            Allure
-          </div>
-          <p className="text-2xl text-white font-light">{pace}</p>
-          <p className="text-xs text-zinc-500">min/km</p>
-        </div>
+        ))}
       </div>
 
       {/* Next rank */}
       {nextRankInfo && (
-        <div className="bg-zinc-900/80 backdrop-blur-sm rounded-xl border border-zinc-800 p-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-zinc-500 text-xs uppercase tracking-wide">Prochain rang</p>
-              <div className="flex items-center gap-2">
-                <span
-                  className="font-semibold"
-                  style={{ color: rankConfigs[nextRankInfo.rank].color }}
-                >
-                  {nextRankInfo.rank}
-                </span>
-                <ChevronRight size={13} className="text-zinc-600" />
-                <span className="text-zinc-400 text-sm">
-                  pace &lt; {nextRankInfo.targetPace}/km
-                </span>
-              </div>
+        <div
+          className="rounded-2xl p-4 flex items-center justify-between"
+          style={cardStyle}
+        >
+          <div className="space-y-1.5">
+            <p
+              className="text-[10px] font-semibold uppercase tracking-[0.1em]"
+              style={{ color: "#4E5468" }}
+            >
+              Prochain rang
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm" style={{ color: rankConfigs[nextRankInfo.rank].color }}>
+                {nextRankInfo.rank}
+              </span>
+              <span style={{ color: "#4E5468" }}>›</span>
+              <span
+                className="text-[13px]"
+                style={{ fontFamily: "var(--font-mono)", color: "#4E5468" }}
+              >
+                pace &lt; {nextRankInfo.targetPace}/km
+              </span>
             </div>
-            <TrendingUp size={18} className="text-zinc-600" />
           </div>
+          <TrendingUp size={16} style={{ color: "#4E5468" }} />
         </div>
       )}
 
       {/* Actions */}
-      <div className="grid grid-cols-2 gap-3 pt-1">
+      <div className="grid grid-cols-2 gap-2.5 pt-1">
         <button
           onClick={handleShare}
-          className="py-3.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 transition-all duration-200 flex items-center justify-center gap-2 text-sm"
+          className="py-3.5 rounded-[10px] flex items-center justify-center gap-2 text-sm font-medium transition-all duration-150"
+          style={{
+            background: "rgba(255,255,255,0.025)",
+            border: "1px solid #1A1D26",
+            color: "#E6E8F0",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+            e.currentTarget.style.borderColor = "#252830";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.025)";
+            e.currentTarget.style.borderColor = "#1A1D26";
+          }}
         >
           {copied ? (
             <>
-              <Check size={15} className="text-green-400" />
-              <span className="text-green-400">Copié !</span>
+              <Check size={14} style={{ color: "#4ADE80" }} />
+              <span style={{ color: "#4ADE80" }}>Copié !</span>
             </>
           ) : (
             <>
-              <Share2 size={15} />
+              <Share2 size={14} />
               Partager
             </>
           )}
@@ -133,14 +203,16 @@ export function ResultCard({ distance, time, pace, percentile, rank, onReset }: 
 
         <button
           onClick={onReset}
-          className="py-3.5 rounded-xl border transition-all duration-200 flex items-center justify-center gap-2 text-sm"
+          className="py-3.5 rounded-[10px] flex items-center justify-center gap-2 text-sm font-medium transition-all duration-150"
           style={{
-            backgroundColor: `${rankColor}15`,
-            borderColor: `${rankColor}40`,
+            background: `${rankColor}14`,
+            border: `1px solid ${rankColor}35`,
             color: rankColor,
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = `${rankColor}22`; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = `${rankColor}14`; }}
         >
-          <RotateCcw size={15} />
+          <RotateCcw size={14} />
           Recalculer
         </button>
       </div>
