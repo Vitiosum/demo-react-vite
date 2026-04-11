@@ -1,48 +1,81 @@
-# RunRank
+# RunRank React — Race pace calculator on Clever Cloud
 
-Classe ton niveau de coureur comme sur League of Legends. Entre ta distance et ton temps, et découvre ton rang.
+> A React 18 + Vite + TypeScript running pace calculator deployed as a static app on Clever Cloud. No server required.
 
-## Fonctionnement
+---
 
-L'app calcule ton **allure (min/km)** et te classe dans un rang basé sur tes performances :
+## Deploy on Clever Cloud
 
-| Rang | Allure (min/km) | Percentile |
-|------|-----------------|------------|
-| Challenger | < 3:00 | Top 1% |
-| Grandmaster | 3:00 – 3:30 | Top 3% |
-| Master | 3:30 – 4:00 | Top 5% |
-| Diamond | 4:00 – 4:30 | Top 10% |
-| Platinum | 4:30 – 5:00 | Top 20% |
-| Gold | 5:00 – 5:30 | Top 35% |
-| Silver | 5:30 – 6:30 | Top 50% |
-| Bronze | 6:30 – 7:30 | Top 70% |
-| Iron | > 7:30 | Top 85%+ |
+1. Fork this repository
+2. Run the build locally: `npm run build` (output goes to the repo root)
+3. Commit the build output: `git add . && git commit -m "build: production"`
+4. In the Clever Cloud console, create a new **Static** application — connect your forked repo
+5. Push → Clever Cloud serves the static files automatically
+
+> **Note:** The Vite build outputs directly to the repository root (`outDir: '.'` in `vite.config.ts`). No `dist/` folder — Clever Cloud serves from root.
+
+---
 
 ## Stack
 
-- **React 18** + **TypeScript**
-- **Vite** — build tool
-- **Tailwind CSS** — styling
-- **shadcn/ui** — composants UI
-- **lucide-react** — icônes
+| Layer     | Technology          |
+|-----------|---------------------|
+| Framework | React 18            |
+| Build     | Vite 6              |
+| Language  | TypeScript          |
+| Styles    | Tailwind CSS 4      |
+| UI        | shadcn/ui           |
+| Icons     | lucide-react        |
+| Design    | Nexus AI (blue #3b82f6, dark background) |
 
-## Démarrage
+---
+
+## Features
+
+- Running pace calculator: enter distance and time, get min/km pace
+- Rank assignment from Iron to Challenger (League of Legends–style tiers)
+- Percentile display for each rank
+- Nexus AI design system — dark blue UI with animated shiny CTA
+- Fully responsive — mobile-first
+
+---
+
+## Local Development
+
+### Prerequisites
+
+- Node.js 20+
+- npm
+
+### Run
 
 ```bash
-# Installer les dépendances
+git clone https://github.com/Vitiosum/demo-react-vite
+cd demo-react-vite
 npm install
-
-# Lancer en dev
 npm run dev
-
-# Build de production
-npm run build
+# → http://localhost:5173
 ```
 
-## Distances supportées
+### Build for deployment
 
-5 km · 10 km · Semi-marathon (21,1 km) · Marathon (42,2 km)
+```bash
+npm run build
+git add .
+git commit -m "build: production"
+git push
+```
 
-## License
+---
 
-MIT
+## Environment Variables
+
+No environment variables required.
+
+---
+
+## Deployment Notes
+
+- `vite.config.ts` sets `build.outDir: '.'` — the build outputs directly to the repo root, not a `dist/` folder
+- Clever Cloud Static runtime serves files from the repository root
+- Always run `npm run build` and commit the output before pushing to trigger a new deployment
