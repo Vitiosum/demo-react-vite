@@ -131,9 +131,11 @@ npm run dev
 # Builder pour la production (régénère dist/)
 npm run build
 
-# Prévisualiser le build en local
+# Prévisualiser le build en local (usage local uniquement, pas un serveur de production)
 npm run preview
 ```
+
+> Aucun script `start` : l'app n'a pas de processus serveur. Le runtime Static sert `dist/` tel quel et n'exécute aucun script npm.
 
 ---
 
