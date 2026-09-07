@@ -86,7 +86,7 @@ Thème unique sombre (navy). Justification : c'est le rendu des sections héro d
 - Aucune dépendance ajoutée aux runtimes ; polices via Google Fonts avec repli système.
 - Le CSS partagé est **copié** dans chaque dépôt (`/public`, `/wwwroot`, `/static`, constante Go, template Askama), pas référencé entre dépôts.
 - Le logo est embarqué en SVG inline (pas de requête vers cdn.clever-cloud.com).
-- Ports / variables / fichiers `clevercloud/*.json` inchangés.
+- Ports / variables inchangés ; `clevercloud/static.json` supprimé (non lu par le runtime Static), webroot fixé par `CC_WEBROOT=/dist`.
 - Vérification locale avant commit : chaque démo lancée, capturée, console sans erreur.
 - Commits sur une branche `redesign/clever-brand` par dépôt ; **aucun push** sans validation.
 
