@@ -58,8 +58,7 @@ Déployée sur **Clever Cloud** (runtime Static), habillée avec le **Clever Bra
 ## ☁️ Déploiement Clever Cloud
 
 - **Type d'app** : Static
-- **App ID** : `app_56896d45-3c0a-4305-8513-8b351c9f41b1`
-- **URL** : https://app-56896d45-3c0a-4305-8513-8b351c9f41b1.cleverapps.io/
+- **App** : créée à la demande dans la Console ou via `clever create --type static` ; aucune instance de démo n'est maintenue en service, l'identifiant `app_…` et le domaine `*.cleverapps.io` sont donc propres à chaque déploiement
 - **Webroot** : `dist/`, réglé par la variable d'environnement `CC_WEBROOT=/dist` (à poser une fois sur l'app)
 - **Build** : `vite build` en local → `dist/` **committé** ; aucun build côté plateforme
 
@@ -86,7 +85,7 @@ dist/assets/        → JS et CSS compilés (committés)
 |---|---|
 | React | 18.3.x |
 | TypeScript | 6.0.x |
-| Vite | 8.0.x |
+| Vite | 8.x (`^8.0.3` ; 8.2.2 verrouillé dans `package-lock.json`) |
 | Tailwind CSS | 4.x (utilitaires ; tokens mappés sur `--cc-*` dans `src/styles/theme.css`) |
 | Design | Clever Brand Kit (Plus Jakarta Sans, navy #13172e, dégradé Clever) — `src/styles/cc-brand.css` |
 | Icônes | lucide-react |

@@ -111,5 +111,5 @@ dist/                                   → committed production build served by
 
 - `vite.config.ts` sets `build.outDir: 'dist'` with `emptyOutDir: true`
 - `dist/` is **committed** on purpose (no build step on the Static runtime)
-- `CC_WEBROOT=/dist` must be set on the Clever Cloud application (`app_56896d45-3c0a-4305-8513-8b351c9f41b1`)
+- `CC_WEBROOT=/dist` must be set on the Clever Cloud application you deploy to, whatever its id (`clever env set CC_WEBROOT /dist`, or Console → *Environment variables*)
 - Design spec: `docs/superpowers/specs/2026-09-06-clever-brand-design.md`
