@@ -11,6 +11,15 @@ build/
 node_modules/
 
 # Env
-.env
-.env.local
+.env*
+!.env.example
+*.local
 .gstack/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
