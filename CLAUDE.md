@@ -90,7 +90,6 @@ dist/assets/        → JS et CSS compilés (committés)
 | Tailwind CSS | 4.x (utilitaires ; tokens mappés sur `--cc-*` dans `src/styles/theme.css`) |
 | Design | Clever Brand Kit (Plus Jakarta Sans, navy #13172e, dégradé Clever) — `src/styles/cc-brand.css` |
 | Icônes | lucide-react |
-| Utilitaires CSS | clsx + tailwind-merge (présents, non utilisés dans l'app) |
 
 ---
 
