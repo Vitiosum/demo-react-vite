@@ -1,26 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;1,400;1,500;1,600&family=IBM+Plex+Mono:wght@400;500&display=swap');
-
+/* Polices du Clever Brand Kit.
+   Plus Jakarta Sans + JetBrains Mono sont chargées une seule fois via les <link> Google Fonts
+   de index.html (snippet brand-kit/head.html). Ici : alias historiques → tokens --cc-*. */
 :root {
-  --font-display: 'Newsreader', serif;
-  --font-body: 'Inter', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
-  --color-accent: #3b82f6;
-
-  /* Nexus AI Platform color system */
-  --nx-bg:         hsl(0, 0%, 9%);
-  --nx-surface:    hsl(0, 0%, 11%);
-  --nx-border:     hsl(0, 0%, 20%);
-  --nx-text:       hsl(0, 0%, 98%);
-  --nx-muted:      hsl(0, 0%, 65%);
-  --nx-muted-dim:  hsl(0, 0%, 28%);
-  --nx-accent:     #3b82f6;
-  --nx-accent-deep:#2563eb;
-  --nx-gold:       #f59e0b;
-  --nx-gold-bright:#fbbf24;
-}
-
-body {
-  font-family: var(--font-body);
-  background-color: var(--nx-bg);
-  letter-spacing: -0.01em;
+  --font-body: var(--cc-font);
+  --font-mono: var(--cc-mono);
 }

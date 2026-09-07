@@ -3,8 +3,8 @@
 **/.DS_Store
 
 # Build output
-# dist/ is intentionally NOT ignored — Vite builds directly to root (outDir: '.')
-# index.html and assets/ at root are the committed build artifacts
+# dist/ is intentionally NOT ignored: the Vite build is committed and served
+# as-is by the Clever Cloud Static runtime (CC_WEBROOT=/dist).
 build/
 
 # Dependencies
@@ -13,3 +13,4 @@ node_modules/
 # Env
 .env
 .env.local
+.gstack/

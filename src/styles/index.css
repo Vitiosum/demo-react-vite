@@ -1,116 +1,96 @@
+@import './cc-brand.css';
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
 
-/* ─── Nexus AI Platform ─────────────────────────────────── */
+/* ─── RunRank — styles spécifiques au calculateur ───────────────────────────
+   cc-brand.css (kit partagé) n'est pas modifié : tout ce qui est propre à la
+   démo vit ici, préfixé rr-. Ces règles sont hors @layer, donc prioritaires
+   sur Tailwind et, à spécificité égale, sur le kit (ordre d'import). */
 
-@property --border-angle {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 0deg;
+/* Colonne centrale du calculateur */
+.rr-calc { max-width: 640px; margin-inline: auto; }
+.rr-form { display: flex; flex-direction: column; gap: 24px; }
+.rr-form .cc-field { gap: 10px; }
+.rr-form .cc-section__head { margin-bottom: 4px; }
+
+/* Sélecteur de distance */
+.rr-dist { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.rr-dist__btn {
+  position: relative; overflow: hidden; text-align: left; padding: 12px 14px 11px;
+  border-radius: var(--cc-radius-sm); border: 1px solid var(--cc-border);
+  background: rgba(19, 23, 46, 0.5); color: var(--cc-text-2); cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
-
-@keyframes border-spin {
-  to { --border-angle: 360deg; }
+.rr-dist__btn:hover { border-color: var(--cc-border-strong); color: var(--cc-text); transform: translateY(-1px); }
+.rr-dist__btn.is-active { border-color: rgba(245, 116, 97, 0.55); background: rgba(245, 116, 97, 0.1); color: var(--cc-text); }
+.rr-dist__btn.is-active::before {
+  content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 2px 2px 0;
+  background: var(--cc-gradient-v);
 }
+.rr-dist__label { display: block; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.rr-dist__btn.is-active .rr-dist__label { background: var(--cc-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.rr-dist__sub { display: block; margin-top: 2px; font-family: var(--cc-mono); font-size: 11px; color: var(--cc-muted); }
 
-@keyframes fadeSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-    filter: blur(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
+/* Saisie du temps h / m / s */
+.rr-time { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.rr-time__cell { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rr-time__input {
+  font-family: var(--cc-mono); font-size: 28px; font-weight: 500; letter-spacing: -0.02em;
+  text-align: center; padding: 14px 8px;
 }
-
-/* Shiny CTA — spinning conic-gradient border + noise texture */
-.shiny-cta {
-  --border-angle: 0deg;
-  position: relative;
-  width: 100%;
-  padding: 2px;
-  border-radius: 12px;
-  border: none;
-  outline: none;
-  cursor: pointer;
-  background: conic-gradient(
-    from var(--border-angle),
-    hsl(0, 0%, 20%) 0%,
-    #3b82f6       20%,
-    #2563eb       35%,
-    hsl(0, 0%, 20%) 55%,
-    hsl(0, 0%, 20%) 80%,
-    #3b82f6       100%
-  );
-  animation: border-spin 4s linear infinite;
-  box-shadow:
-    0 0 30px rgba(59, 130, 246, 0.18),
-    0 4px 40px rgba(59, 130, 246, 0.08);
-  transition: box-shadow 0.3s ease, opacity 0.15s;
-}
-
-.shiny-cta:hover {
-  box-shadow:
-    0 0 40px rgba(59, 130, 246, 0.3),
-    0 4px 60px rgba(59, 130, 246, 0.15);
-}
-
-.shiny-cta:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.shiny-cta-inner {
-  position: relative;
-  width: 100%;
-  border-radius: 10px;
-  background: hsl(0, 0%, 12%);
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  color: hsl(0, 0%, 98%);
-  letter-spacing: -0.01em;
-  overflow: hidden;
-  transition: background 0.15s;
-}
-
-.shiny-cta:hover:not(:disabled) .shiny-cta-inner {
-  background: hsl(0, 0%, 14%);
-}
-
-.shiny-cta-noise {
-  position: absolute;
-  inset: 0;
-  background-image: url('https://grainy-gradients.vercel.app/noise.svg');
-  opacity: 0.05;
-  pointer-events: none;
-}
-
-/* Staggered entrance animations */
-.nx-animate {
-  animation: fadeSlideIn 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.nx-a1 { animation-delay: 0ms; }
-.nx-a2 { animation-delay: 70ms; }
-.nx-a3 { animation-delay: 140ms; }
-.nx-a4 { animation-delay: 210ms; }
-.nx-a5 { animation-delay: 280ms; }
-.nx-a6 { animation-delay: 350ms; }
-
-/* Number inputs — hide browser spinners */
+.rr-time__unit { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cc-muted); }
 input[type='number']::-webkit-inner-spin-button,
-input[type='number']::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
+
+.rr-submit { width: 100%; height: 50px; font-size: 16px; }
+.rr-spinner {
+  width: 16px; height: 16px; border-radius: 50%; flex: none;
+  border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: #fff;
+  animation: rr-spin 0.8s linear infinite;
 }
-input[type='number'] { -moz-appearance: textfield; }
+@keyframes rr-spin { to { transform: rotate(360deg); } }
+.rr-hint { text-align: center; }
+
+/* Résultat */
+.rr-result { display: flex; flex-direction: column; gap: 12px; }
+.rr-rank-card { padding: 0; overflow: hidden; }
+.rr-rank { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 36px 24px 32px; text-align: center; }
+.rr-rank__ring { position: relative; }
+.rr-rank__ping { position: absolute; inset: 0; border-radius: 50%; opacity: 0.18; animation: rr-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+@keyframes rr-ping { 75%, 100% { transform: scale(1.8); opacity: 0; } }
+.rr-rank__emoji {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  width: 88px; height: 88px; border-radius: 50%; border: 1px solid; font-size: 40px; line-height: 1;
+}
+.rr-rank__name { font-family: var(--cc-font); font-size: clamp(52px, 9vw, 84px); font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+.rr-rank__msg { margin-top: 10px; font-size: 15px; color: var(--cc-text-2); }
+.rr-rank-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  border: 1px solid; font-size: 13px; font-weight: 700; white-space: nowrap;
+}
+
+.rr-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rr-top { font-family: var(--cc-mono); font-size: 14px; font-weight: 600; }
+.rr-bar { margin-top: 12px; height: 6px; border-radius: 999px; overflow: hidden; background: rgba(222, 221, 238, 0.08); }
+.rr-bar__fill { height: 100%; border-radius: 999px; transition: width 1s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.rr-bar__ends { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--cc-muted); }
+
+.rr-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.rr-stats .cc-stat { font-size: clamp(26px, 4vw, 32px); }
+
+.rr-next { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rr-next__rank { font-weight: 700; font-size: 15px; }
+.rr-next__pace { font-family: var(--cc-mono); font-size: 13px; color: var(--cc-text-2); }
+
+.rr-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-top: 4px; }
+.rr-actions .cc-btn { width: 100%; }
+.rr-ok { color: var(--cc-green); }
+
+@media (max-width: 640px) {
+  .rr-dist { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rr-time__input { font-size: 24px; padding: 12px 6px; }
+  .rr-stats .cc-stat { font-size: 24px; }
+  .rr-next { flex-wrap: wrap; }
+}

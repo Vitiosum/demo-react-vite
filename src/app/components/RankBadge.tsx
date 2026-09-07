@@ -9,6 +9,7 @@ interface RankConfig {
   message: string;
 }
 
+// Couleurs propres aux rangs (conservées telles quelles : elles font partie du jeu RunRank).
 export const rankConfigs: Record<RankType, RankConfig> = {
   Iron:        { name: "Iron",        color: "#6E7179", emoji: "🏅", message: "Débute ton aventure — continue de courir !" },
   Bronze:      { name: "Bronze",      color: "#CD7F32", emoji: "🥉", message: "Coureur débutant — tu progresses bien !" },
@@ -31,66 +32,39 @@ export function RankBadge({ rank, size = "large" }: RankBadgeProps) {
 
   if (size === "small") {
     return (
-      <div
-        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold"
-        style={{
-          backgroundColor: `${config.color}18`,
-          borderLeft: `3px solid ${config.color}`,
-          color: config.color,
-        }}
+      <span
+        className="rr-rank-chip"
+        style={{ color: config.color, background: `${config.color}18`, borderColor: `${config.color}55` }}
       >
-        <span>{config.emoji}</span>
+        <span aria-hidden="true">{config.emoji}</span>
         <span>{rank}</span>
-      </div>
+      </span>
     );
   }
 
   return (
     <div
-      className="flex flex-col items-center gap-4 px-8 py-9 text-center"
-      style={{
-        background: `radial-gradient(ellipse at 50% 0%, ${config.color}14 0%, transparent 65%)`,
-      }}
+      className="rr-rank"
+      style={{ background: `radial-gradient(ellipse at 50% 0%, ${config.color}1f 0%, transparent 65%)` }}
     >
-      {/* Pulsing ring + emoji */}
-      <div className="relative">
-        <span
-          className="absolute inset-0 rounded-full animate-ping opacity-12"
-          style={{ background: config.color }}
-        />
+      <div className="rr-rank__ring">
+        <span className="rr-rank__ping" style={{ background: config.color }} />
         <div
-          className="relative flex items-center justify-center rounded-full"
+          className="rr-rank__emoji"
           style={{
-            width: 88, height: 88,
-            background: `${config.color}18`,
-            border: `1px solid ${config.color}35`,
-            boxShadow: `0 0 40px ${config.color}28, 0 0 80px ${config.color}10`,
-            fontSize: 40,
+            background: `${config.color}1a`,
+            borderColor: `${config.color}55`,
+            boxShadow: `0 0 40px ${config.color}30, 0 0 80px ${config.color}12`,
           }}
         >
           {config.emoji}
         </div>
       </div>
-
-      {/* Rank name — Newsreader italic for editorial elegance */}
       <div>
-        <h2
-          className="leading-none"
-          style={{
-            fontFamily: "var(--font-display)",
-            fontStyle: "italic",
-            fontSize: 84,
-            fontWeight: 500,
-            color: config.color,
-            textShadow: `0 0 40px ${config.color}40`,
-            letterSpacing: "-0.02em",
-          }}
-        >
+        <h2 className="rr-rank__name" style={{ color: config.color, textShadow: `0 0 40px ${config.color}40` }}>
           {rank}
         </h2>
-        <p className="mt-3 text-[13.5px]" style={{ color: "hsl(0, 0%, 55%)", letterSpacing: "-0.01em" }}>
-          {config.message}
-        </p>
+        <p className="rr-rank__msg">{config.message}</p>
       </div>
     </div>
   );

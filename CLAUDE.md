@@ -51,26 +51,32 @@ App React + Vite de classement de course à pied **RunRank**.
 L'utilisateur saisit une distance (5k, 10k, semi, marathon) et un temps, l'app calcule l'allure et attribue un rang (Iron → Challenger) avec un score percentile.
 App 100% statique — pas de backend, pas d'API, tout est calculé côté client.
 
-Déployée sur **Clever Cloud** (runtime Static).
+Déployée sur **Clever Cloud** (runtime Static), habillée avec le **Clever Brand Kit** (certification Clever Cloud mise en avant).
 
 ---
 
 ## ☁️ Déploiement Clever Cloud
 
 - **Type d'app** : Static
+- **App ID** : `app_56896d45-3c0a-4305-8513-8b351c9f41b1`
 - **URL** : https://app-56896d45-3c0a-4305-8513-8b351c9f41b1.cleverapps.io/
-- **Webroot** : racine du repo (`/`) — Clever Cloud sert directement les fichiers à la racine
-- **Build** : Vite builde directement à la racine (`outDir: '.'`) — le `index.html` et `assets/` sont committés
+- **Webroot** : `dist/`, réglé par la variable d'environnement `CC_WEBROOT=/dist` (à poser une fois sur l'app)
+- **Build** : `vite build` en local → `dist/` **committé** ; aucun build côté plateforme
 
-### Fichiers Clever Cloud
-```
-clevercloud/static.json   → webroot: / (racine)
-index.html                → version buildée (générée par Vite, commitée)
-assets/                   → JS et CSS compilés (committés)
+```bash
+# Une seule fois, sur l'app Clever Cloud
+clever env set CC_WEBROOT /dist
 ```
 
-> ⚠️ Le `clevercloud/static.json` avec `webroot: /dist` n'était pas respecté.
-> Solution retenue : builder Vite directement à la racine avec `outDir: '.'`.
+### Fichiers
+```
+index.html          → entrée SOURCE Vite (head snippet brand kit + /src/main.tsx)
+dist/index.html     → version buildée (générée par Vite, committée)
+dist/assets/        → JS et CSS compilés (committés)
+```
+
+> ⚠️ Le runtime Static ne lit **pas** `clevercloud/static.json` (supprimé) : seul `CC_WEBROOT` fixe le dossier servi.
+> Ne pas utiliser `CC_BUILD_COMMAND` (disponibilité de Node dans l'image Static non vérifiée).
 
 ---
 
@@ -81,25 +87,35 @@ assets/                   → JS et CSS compilés (committés)
 | React | 18.3.x |
 | TypeScript | 6.0.x |
 | Vite | 8.0.x |
-| Tailwind CSS | 4.x |
-| UI components | shadcn/ui (non utilisés dans l'app principale) |
+| Tailwind CSS | 4.x (utilitaires ; tokens mappés sur `--cc-*` dans `src/styles/theme.css`) |
+| Design | Clever Brand Kit (Plus Jakarta Sans, navy #13172e, dégradé Clever) — `src/styles/cc-brand.css` |
 | Icônes | lucide-react |
-| Utilitaires CSS | clsx + tailwind-merge |
+| Utilitaires CSS | clsx + tailwind-merge (présents, non utilisés dans l'app) |
 
 ---
 
 ## 📁 Structure clé
 
 ```
-src/app/App.tsx                          → composant principal
-src/app/components/DistanceSelector.tsx  → sélecteur de distance
-src/app/components/ResultCard.tsx        → carte de résultat
-src/app/components/RankBadge.tsx         → badge de rang avec config des rangs
-src/app/utils/calculations.ts           → logique de calcul (allure, rang, percentile)
-src/styles/                             → CSS (Tailwind, thème, fonts)
-vite.config.ts                          → build vers racine (outDir: '.')
-assets/                                 → build compilé (commité)
-index.html                              → build compilé (commité)
+index.html                                → entrée Vite source
+src/main.tsx                              → montage React + import src/styles/index.css
+src/app/App.tsx                           → page : topbar → héro → calculateur → certification → panneau Static → footer
+src/app/components/clever/CleverLogo.tsx  → logo officiel Clever Cloud (SVG inline JSX)
+src/app/components/clever/CleverBadge.tsx → médaillon « Certified · Clever Cloud · Academy »
+src/app/components/clever/CleverTopbar.tsx→ barre de marque (nom démo, pill stack, live/local, Se certifier)
+src/app/components/clever/CleverCert.tsx  → bloc certification complet (2 parcours + CTA)
+src/app/components/clever/CleverFooter.tsx→ pied de page plateforme (doc Static, Console, Academy, GitHub)
+src/app/components/clever/platform.ts     → détection live/local via l'hôte (pas d'env serveur en statique)
+src/app/components/DistanceSelector.tsx   → sélecteur de distance
+src/app/components/ResultCard.tsx         → carte de résultat
+src/app/components/RankBadge.tsx          → badge de rang (couleurs propres aux rangs conservées)
+src/app/utils/calculations.ts             → logique de calcul (allure, rang, percentile)
+src/styles/cc-brand.css                   → kit partagé, copié tel quel — NE PAS MODIFIER
+src/styles/index.css                      → styles spécifiques RunRank (classes rr-*)
+src/styles/fonts.css / theme.css          → alias polices et pont Tailwind → tokens --cc-*
+vite.config.ts                            → build vers dist/ (emptyOutDir)
+dist/                                     → build compilé (committé)
+docs/superpowers/specs/                   → spec design Clever Brand Kit
 ```
 
 ---
@@ -113,7 +129,7 @@ npm install
 # Lancer en développement
 npm run dev
 
-# Builder pour la production (met à jour index.html et assets/ à la racine)
+# Builder pour la production (régénère dist/)
 npm run build
 
 # Prévisualiser le build en local
@@ -125,7 +141,7 @@ npm run preview
 ## 🚀 Déployer une modification
 
 ```bash
-# 1. Builder (obligatoire — met à jour index.html et assets/ à la racine)
+# 1. Builder (obligatoire — régénère dist/)
 npm run build
 
 # 2. Commiter les fichiers modifiés + le build
@@ -139,12 +155,21 @@ git push
 
 ---
 
+## 🎨 Règles de design
+
+- Le kit `src/styles/cc-brand.css` est partagé entre les démos : ne pas l'éditer, ajouter les styles propres dans `src/styles/index.css`.
+- Ordre des blocs à conserver : topbar → héro → calculateur → bloc certification → panneau « Runtime Static » → footer.
+- Textes UI en français ; couleurs via les tokens `--cc-*` ; polices Plus Jakarta Sans / JetBrains Mono chargées par le `<head>` de `index.html`.
+- Les couleurs des rangs (`RankBadge.tsx`) sont propres au jeu RunRank et restent inchangées.
+
+---
+
 ## ⚠️ Points de vigilance
 
-- Le dossier `assets/` et `index.html` à la racine sont générés par Vite et **doivent être committés**
-- Les composants `src/app/components/ui/` (shadcn) ne sont pas utilisés dans l'app — ils génèrent des erreurs TypeScript si `tsc` est lancé (dépendances radix-ui manquantes). Le build utilise `vite build` sans `tsc -b` pour cette raison
-- `outDir: '.'` génère un warning Vite (normal, sans impact)
-- La typo Google Fonts (Inter) est chargée via CDN dans `src/styles/fonts.css`
+- `dist/` est généré par Vite et **doit être committé** ; `assets/` et `index.html` buildés ne sont plus à la racine
+- `CC_WEBROOT=/dist` doit être posé sur l'app, sinon la racine (index.html source) est servie → page blanche
+- `src/vite-env.d.ts` référence `vite/client` pour que `npx tsc -p tsconfig.app.json --noEmit` passe (import CSS side-effect)
+- Les polices Google Fonts sont chargées via `<link>` dans `index.html` (repli `system-ui` / `ui-monospace`)
 
 ---
 
@@ -152,7 +177,7 @@ git push
 
 | Symptôme | Cause probable | Correction |
 |---|---|---|
-| Page blanche | `index.html` à la racine = version source (non buildée) | `npm run build` + push |
-| Assets 404 | Build non commité | `git add assets/ index.html` + push |
-| Erreurs TypeScript au build | Composants shadcn non installés | Normal — le build utilise `vite build` sans `tsc` |
+| Page blanche en prod | `CC_WEBROOT` absent → racine servie (index.html source) | `clever env set CC_WEBROOT /dist` + redéploiement |
+| Assets 404 | `dist/` non committé | `npm run build` + `git add dist/` + push |
 | Modifications non visibles | Oubli du `npm run build` avant push | Toujours builder avant de pusher |
+| Style cassé / fond blanc | `cc-brand.css` non importé dans `src/styles/index.css` | Vérifier l'ordre des `@import` (cc-brand en premier) |
