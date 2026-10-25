@@ -137,3 +137,8 @@ dist/                                   → committed production build served by
 - `dist/` is **committed** on purpose (no build step on the Static runtime)
 - `CC_WEBROOT=/dist` must be set on the Clever Cloud application you deploy to, whatever its id (`clever env set CC_WEBROOT /dist`, or Console → *Environment variables*)
 - Design spec: `docs/superpowers/specs/2026-09-06-clever-brand-design.md`
+
+## Security and web server
+
+The Static runtime's default server (SWS) cannot set HTTP headers. The root `Caddyfile` is detected by the runtime and run (`caddy run`) instead: it serves `dist/` only, sets CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, drops the `Server` header, caches only hashed `dist/assets/` files long-term and serves `index.html`/`config.json` with `no-cache`. Keep it in `CC_OVERRIDE_BUILDCACHE` (`dist:scripts:Caddyfile`) so a `clever restart` from the build cache still has it.
+

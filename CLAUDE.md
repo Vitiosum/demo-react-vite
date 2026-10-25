@@ -109,6 +109,10 @@ dist/                    → build servi (committé)
 
 ---
 
+## 🔒 Sécurité et serveur web
+
+Le serveur par défaut du runtime Static (SWS) ne permet pas de poser d'en-têtes HTTP. Le `Caddyfile` à la racine est détecté par le runtime et lancé (`caddy run`) à sa place : il ne sert que `dist/`, pose CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, retire l'en-tête `Server`, met en cache long les seuls fichiers hashés de `dist/assets/` et sert `index.html`/`config.json` en `no-cache`. Il doit figurer dans `CC_OVERRIDE_BUILDCACHE` (`dist:scripts:Caddyfile`), sinon un `clever restart` repartirait sans lui (vérifié en production le 2026-10-25, deploy et restart).
+
 ## 🛠️ Stack
 
 | Élément | Valeur |
