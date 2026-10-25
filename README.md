@@ -9,7 +9,7 @@
 1. Fork this repository
 2. Run the build locally: `npm run build` (output goes to `dist/`)
 3. Commit the build output: `git add . && git commit -m "build: production"`
-4. In the Clever Cloud console, create a new **Static** application — connect your forked repo
+4. Create a **Static** application with clever-tools (`clever create --type static`). There is no GitHub link: `clever create --github` is refused by the API ("wrong oauth application data"; the account's GitHub integration must be reconnected in the Console)
 5. Set the runtime variables once (with [clever-tools](https://www.clever.cloud/developers/doc/cli/)):
    ```bash
    clever env set CC_WEBROOT /dist                              # folder served
@@ -18,7 +18,9 @@
    clever env set CC_HEALTH_CHECK_PATH /config.json
    clever env set CC_GIT_FULL_CLONE false                       # shallow clone, faster deploys
    ```
-6. Push → Clever Cloud serves `dist/` automatically
+6. `git push` (GitHub backup), then `clever deploy` → Clever Cloud serves `dist/`. A plain `git push` does not redeploy.
+
+Live app from 2026-10-25 to 2026-11-05 (deletion planned after the 2026-11-04 video shoot): `app_c7280242-2f19-405a-a449-4d8f6468f0e7`, https://app-c7280242-2f19-405a-a449-4d8f6468f0e7.cleverapps.io/. After that date, recreate it with the procedure above.
 
 > **Note:** the Static runtime does not read `clevercloud/static.json`; the served folder is set with the `CC_WEBROOT` environment variable (relative to the repo root, default `/`). See the [Static runtime documentation](https://www.clever.cloud/developers/doc/applications/static/).
 
@@ -80,10 +82,11 @@ npm run build          # → dist/index.html + dist/assets/
 npm run preview        # optional: serve dist/ locally
 git add .
 git commit -m "build: production"
-git push
+git push               # GitHub backup only
+clever deploy          # deploys main to Clever Cloud (no GitHub link: push alone does not redeploy)
 ```
 
-> **Always run `npm run build` before pushing.** The Static runtime serves the committed `dist/` folder; without a fresh build, Clever Cloud keeps serving the previous version.
+> **Always run `npm run build` before deploying.** The Static runtime serves the committed `dist/` folder; without a fresh build, Clever Cloud keeps serving the previous version.
 
 ---
 

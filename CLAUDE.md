@@ -58,7 +58,7 @@ Déployée sur **Clever Cloud** (runtime Static), habillée avec le **Clever Bra
 ## ☁️ Déploiement Clever Cloud
 
 - **Type d'app** : Static (`clever create --type static`), gabarit pico ou nano suffisant (aucun processus applicatif)
-- **App** : créée à la demande ; aucune instance de démo n'est maintenue en service
+- **App** : `app_c7280242-2f19-405a-a449-4d8f6468f0e7`, https://app-c7280242-2f19-405a-a449-4d8f6468f0e7.cleverapps.io/ ; en service du 2026-10-25 au 2026-11-05 (suppression planifiée après le tournage vidéo du 2026-11-04) ; après cette date, recréer avec `clever create --type static` + variables ci-dessous
 - **Build** : `vite build` en local → `dist/` **committé** ; aucun build côté plateforme (pas de `CC_BUILD_COMMAND`, aucun SSG détecté : Vite n'est pas dans la liste de l'auto-build)
 - **Serveur** : Static Web Server (SWS) sert `dist/` ; aucun add-on
 
@@ -177,10 +177,13 @@ npm run build
 # 2. Commiter les fichiers modifiés + le build
 git add .
 git commit -m "description"
-git push
+git push          # sauvegarde GitHub uniquement
+clever deploy     # déploie main sur Clever Cloud
 ```
 
-> ⚠️ **Ne pas oublier le `npm run build` avant chaque push.**
+Pas de liaison GitHub → Clever Cloud (`clever create --github` refusé par l'API, « wrong oauth application data » ; intégration GitHub du compte à reconnecter dans la Console) : un `git push` ne redéploie pas.
+
+> ⚠️ **Ne pas oublier le `npm run build` avant chaque déploiement.**
 > Sans ça, Clever Cloud sert l'ancienne version buildée.
 
 ---
@@ -230,8 +233,8 @@ npm run build   # remet le dist/config.json par défaut avant de committer
 | Symptôme | Cause probable | Correction |
 |---|---|---|
 | Page blanche en prod | `CC_WEBROOT` absent → racine servie (index.html source) | `clever env set CC_WEBROOT /dist` + redéploiement |
-| Assets 404 | `dist/` non committé | `npm run build` + `git add dist/` + push |
-| Modifications non visibles | Oubli du `npm run build` avant push | Toujours builder avant de pusher |
+| Assets 404 | `dist/` non committé | `npm run build` + `git add dist/` + `clever deploy` |
+| Modifications non visibles | Oubli du `npm run build` avant déploiement | Toujours builder avant `clever deploy` |
 | Variables sans effet | `CC_PRE_RUN_HOOK` absent ou script non exécutable | `clever env set CC_PRE_RUN_HOOK ./scripts/write-config.sh` ; vérifier « write-config: … écrit » dans `clever logs` |
 | Déploiement KO après `clever restart` | script absent du cache de build | `clever env set CC_OVERRIDE_BUILDCACHE dist:scripts` |
 | Style cassé / fond blanc | `cc-brand.css` non importé dans `src/styles/index.css` | Vérifier l'ordre des `@import` (cc-brand en premier) |
