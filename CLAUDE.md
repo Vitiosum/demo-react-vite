@@ -57,25 +57,54 @@ Déployée sur **Clever Cloud** (runtime Static), habillée avec le **Clever Bra
 
 ## ☁️ Déploiement Clever Cloud
 
-- **Type d'app** : Static
-- **App** : créée à la demande dans la Console ou via `clever create --type static` ; aucune instance de démo n'est maintenue en service, l'identifiant `app_…` et le domaine `*.cleverapps.io` sont donc propres à chaque déploiement
-- **Webroot** : `dist/`, réglé par la variable d'environnement `CC_WEBROOT=/dist` (à poser une fois sur l'app)
-- **Build** : `vite build` en local → `dist/` **committé** ; aucun build côté plateforme
+- **Type d'app** : Static (`clever create --type static`), gabarit pico ou nano suffisant (aucun processus applicatif)
+- **App** : créée à la demande ; aucune instance de démo n'est maintenue en service
+- **Build** : `vite build` en local → `dist/` **committé** ; aucun build côté plateforme (pas de `CC_BUILD_COMMAND`, aucun SSG détecté : Vite n'est pas dans la liste de l'auto-build)
+- **Serveur** : Static Web Server (SWS) sert `dist/` ; aucun add-on
+
+### Variables Clever à poser (une fois)
+
+| Variable | Valeur | Preuve doc |
+|---|---|---|
+| `CC_WEBROOT` | `/dist` | runtime Static : « set the CC_WEBROOT environment variable, relative to the root of your project » |
+| `CC_PRE_RUN_HOOK` | `./scripts/write-config.sh` | hooks : « This hook runs every time. » et « Hooks have access to the environnement variables » |
+| `CC_OVERRIDE_BUILDCACHE` | `dist:scripts` | runtime Static : « if you define CC_WEBROOT, the build cache contains only some configuration files and the served directory » → sans elle, le script du hook manquerait lors d'un `clever restart` depuis le cache |
+| `CC_HEALTH_CHECK_PATH` | `/config.json` | « If these paths don't return a 2xx response code, the deployment fails. » |
+| `CC_GIT_FULL_CLONE` | `false` | référence : « If set to false, the git repository is cloned with --depth 1 to speed up the deployment » (l'historique de `dist/` alourdit le clone) |
 
 ```bash
-# Une seule fois, sur l'app Clever Cloud
 clever env set CC_WEBROOT /dist
+clever env set CC_PRE_RUN_HOOK ./scripts/write-config.sh
+clever env set CC_OVERRIDE_BUILDCACHE dist:scripts
+clever env set CC_HEALTH_CHECK_PATH /config.json
+clever env set CC_GIT_FULL_CLONE false
 ```
+
+Inutiles ici : `CC_CACHE_DEPENDENCIES` (aucune dépendance installée sur la plateforme), `CC_BUILD_COMMAND`.
+
+### Variables de démo (lues par l'app via `dist/config.json`)
+
+| Variable | Défaut | Effet visible |
+|---|---|---|
+| `APP_ENV` | `local` | pastille du dossard ; fond blanc si `production` |
+| `ANNOUNCEMENT` | vide | bandeau dégradé sous la topbar si non vide |
+| `CLUB_NAME` | `RunRank Club` | bandeau du dossard + phrase « Objectif <club> … » |
+| `GOAL_PACE` | `5:00` | drapeau « Objectif » sur la piste des rangs, verdict tenu / à gagner, temps cible du bracelet. Format `m:ss` entre 2:00 et 12:00, sinon défaut + mention « valeur invalide ignorée » |
+
+Variables plateforme affichées (dossard) : `INSTANCE_NUMBER` (numéro du dossard), `CC_PRETTY_INSTANCE_NAME`, `CC_APP_NAME`, `INSTANCE_TYPE`, `CC_COMMIT_ID`, `CC_DEPLOYMENT_ID` ; `APP_ID` présent ⇒ pastille « Live on Clever Cloud ». En local : « injecté au déploiement ».
+
+**Pourquoi un hook** : une app statique ne voit pas les variables d'environnement. `scripts/write-config.sh` (sh, tr, sed, date : aucune dépendance) écrit `dist/config.json` avant chaque démarrage ; React le lit avec `fetch(..., { cache: "no-store" })`, ce qui contourne le cache HTTP de SWS (1 an sur js/css). Le fichier committé `public/config.json` → `dist/config.json` (valeurs vides) sert de repli ; fichier absent ou invalide ⇒ défauts, la page s'affiche quand même.
 
 ### Fichiers
 ```
-index.html          → entrée SOURCE Vite (head snippet brand kit + /src/main.tsx)
-dist/index.html     → version buildée (générée par Vite, committée)
-dist/assets/        → JS et CSS compilés (committés)
+index.html               → entrée SOURCE Vite (CSP meta : connect-src 'self' autorise le fetch de config.json)
+public/config.json       → config par défaut (copiée dans dist/ au build)
+scripts/write-config.sh  → hook CC_PRE_RUN_HOOK : variables → dist/config.json
+dist/                    → build servi (committé)
 ```
 
-> ⚠️ Le runtime Static ne lit **pas** `clevercloud/static.json` (supprimé) : seul `CC_WEBROOT` fixe le dossier servi.
-> Ne pas utiliser `CC_BUILD_COMMAND` (disponibilité de Node dans l'image Static non vérifiée).
+> ⚠️ Le runtime Static ne lit **pas** `clevercloud/static.json` : seul `CC_WEBROOT` fixe le dossier servi.
+> Ne jamais créer de `config.toml` à la racine (déclenche l'auto-build Zola).
 
 ---
 
@@ -97,17 +126,18 @@ dist/assets/        → JS et CSS compilés (committés)
 ```
 index.html                                → entrée Vite source
 src/main.tsx                              → montage React + import src/styles/index.css
-src/app/App.tsx                           → page : topbar → héro → calculateur → certification → panneau Static → footer
+src/app/App.tsx                           → page : topbar → bandeau ANNOUNCEMENT → allure + piste + bracelet | dossard → certification → section Variables (config.json) → footer
+src/app/config.ts                         → lecture de /config.json (fetch no-store), parsing robuste, défauts
+src/app/components/PaceTrack.tsx          → piste des 9 rangs, marqueur « Toi » et drapeau GOAL_PACE
+src/app/components/RaceBib.tsx            → dossard : instance, APP_ENV, CLUB_NAME, GOAL_PACE, variables plateforme
 src/app/components/clever/CleverLogo.tsx  → logo officiel Clever Cloud (SVG inline JSX)
 src/app/components/clever/CleverBadge.tsx → médaillon « Certified · Clever Cloud · Academy »
 src/app/components/clever/CleverTopbar.tsx→ barre de marque (nom démo, pill stack, live/local, Se certifier)
 src/app/components/clever/CleverCert.tsx  → bloc certification complet (2 parcours + CTA)
 src/app/components/clever/CleverFooter.tsx→ pied de page plateforme (doc Static, Console, Academy, GitHub)
-src/app/components/clever/platform.ts     → détection live/local via l'hôte (pas d'env serveur en statique)
 src/app/components/DistanceSelector.tsx   → sélecteur de distance
-src/app/components/ResultCard.tsx         → carte de résultat
-src/app/components/RankBadge.tsx          → badge de rang (couleurs propres aux rangs conservées)
-src/app/utils/calculations.ts             → logique de calcul (allure, rang, percentile)
+src/app/components/RankBadge.tsx          → couleurs et messages des rangs
+src/app/utils/calculations.ts             → allure, rang, percentile, échelle de la piste, points de passage
 src/styles/cc-brand.css                   → kit partagé, copié tel quel — NE PAS MODIFIER
 src/styles/index.css                      → styles spécifiques RunRank (classes rr-*)
 src/styles/fonts.css / theme.css          → alias polices et pont Tailwind → tokens --cc-*
@@ -158,7 +188,7 @@ git push
 ## 🎨 Règles de design
 
 - Le kit `src/styles/cc-brand.css` est partagé entre les démos : ne pas l'éditer, ajouter les styles propres dans `src/styles/index.css`.
-- Ordre des blocs à conserver : topbar → héro → calculateur → bloc certification → panneau « Runtime Static » → footer.
+- Ordre des blocs : topbar → bandeau → premier écran (allure géante, piste des rangs, bracelet d'allure, dossard) → bloc certification → section Variables → footer. Le premier écran montre le produit, pas un héro marketing.
 - Textes UI en français ; couleurs via les tokens `--cc-*` ; polices Plus Jakarta Sans / JetBrains Mono chargées par le `<head>` de `index.html`.
 - Les couleurs des rangs (`RankBadge.tsx`) sont propres au jeu RunRank et restent inchangées.
 
@@ -170,6 +200,28 @@ git push
 - `CC_WEBROOT=/dist` doit être posé sur l'app, sinon la racine (index.html source) est servie → page blanche
 - `src/vite-env.d.ts` référence `vite/client` pour que `npx tsc -p tsconfig.app.json --noEmit` passe (import CSS side-effect)
 - Les polices Google Fonts sont chargées via `<link>` dans `index.html` (repli `system-ui` / `ui-monospace`)
+- SWS met `index.html` en cache 1 jour : après un **redéploiement**, faire un rechargement forcé. Un `clever restart` (variables) ne pose pas ce problème, `config.json` étant lu sans cache
+- `npm run preview` renvoie `index.html` pour un fichier absent (repli SPA) : le JSON invalide est ignoré, défauts appliqués ; SWS renvoie 404, même effet
+
+---
+
+## 🎬 Scénario vidéo
+
+1. Ouvrir l'app : « Ton 10 km en 48:30, c'est 4:51 /km », rang Platinum, dossard avec le numéro d'instance.
+2. Changer la distance / le temps : l'allure, la piste et le bracelet suivent en direct. Lien partageable `?d=42.195&t=2:59:30`.
+3. Console Clever → Variables : poser `ANNOUNCEMENT`, `CLUB_NAME="Les Foulées Nantaises"`, `GOAL_PACE=4:30`, `APP_ENV=production`.
+4. `clever restart`, recharger : bandeau, nom du club sur le dossard, drapeau déplacé (« encore 21 s/km à gagner »), pastille production, pied du dossard « écrit par CC_PRE_RUN_HOOK à hh:mm:ss ».
+5. Descendre au bloc certification (bouton « Se certifier Clever Cloud ↓ ») puis à la section Variables qui affiche le `config.json` servi.
+
+### Tester les variables en local
+
+```bash
+npm run build
+APP_ENV=production ANNOUNCEMENT="Démo live" CLUB_NAME="Les Foulées Nantaises" GOAL_PACE=4:30 \
+  INSTANCE_NUMBER=1 APP_ID=app_demo sh scripts/write-config.sh   # écrit dist/config.json
+npx vite preview --port 8102
+npm run build   # remet le dist/config.json par défaut avant de committer
+```
 
 ---
 
@@ -180,4 +232,6 @@ git push
 | Page blanche en prod | `CC_WEBROOT` absent → racine servie (index.html source) | `clever env set CC_WEBROOT /dist` + redéploiement |
 | Assets 404 | `dist/` non committé | `npm run build` + `git add dist/` + push |
 | Modifications non visibles | Oubli du `npm run build` avant push | Toujours builder avant de pusher |
+| Variables sans effet | `CC_PRE_RUN_HOOK` absent ou script non exécutable | `clever env set CC_PRE_RUN_HOOK ./scripts/write-config.sh` ; vérifier « write-config: … écrit » dans `clever logs` |
+| Déploiement KO après `clever restart` | script absent du cache de build | `clever env set CC_OVERRIDE_BUILDCACHE dist:scripts` |
 | Style cassé / fond blanc | `cc-brand.css` non importé dans `src/styles/index.css` | Vérifier l'ordre des `@import` (cc-brand en premier) |

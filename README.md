@@ -10,9 +10,13 @@
 2. Run the build locally: `npm run build` (output goes to `dist/`)
 3. Commit the build output: `git add . && git commit -m "build: production"`
 4. In the Clever Cloud console, create a new **Static** application — connect your forked repo
-5. Point the Static runtime at the build folder (once, with [clever-tools](https://www.clever.cloud/developers/doc/cli/)):
+5. Set the runtime variables once (with [clever-tools](https://www.clever.cloud/developers/doc/cli/)):
    ```bash
-   clever env set CC_WEBROOT /dist
+   clever env set CC_WEBROOT /dist                              # folder served
+   clever env set CC_PRE_RUN_HOOK ./scripts/write-config.sh     # env vars -> dist/config.json, on every start
+   clever env set CC_OVERRIDE_BUILDCACHE dist:scripts           # keep the hook script in the build cache (restarts)
+   clever env set CC_HEALTH_CHECK_PATH /config.json
+   clever env set CC_GIT_FULL_CLONE false                       # shallow clone, faster deploys
    ```
 6. Push → Clever Cloud serves `dist/` automatically
 
@@ -35,10 +39,11 @@
 
 ## Features
 
-- Running pace calculator: enter distance and time, get min/km pace
-- Rank assignment from Iron to Challenger (League of Legends–style tiers)
-- Percentile display for each rank
-- Clever Cloud brand chrome: top bar, hero, **certification block**, Static runtime panel, footer
+- Live pace calculator: the first screen shows your pace in huge type, updated as you type
+- Rank track: 9 lanes from Iron to Challenger, your marker and the club goal flag (`GOAL_PACE`)
+- Pace band (split times) and a race bib showing the Clever Cloud instance that served the page
+- Shareable link: `?d=42.195&t=2:59:30`
+- Clever Cloud chrome: top bar, `ANNOUNCEMENT` banner, **certification block** right under the first screen, footer
 - Fully responsive — mobile-first, no horizontal scroll at 375 px
 
 ---
@@ -84,11 +89,24 @@ git push
 
 ## Environment Variables
 
-| Variable     | Value   | Purpose |
-|--------------|---------|---------|
-| `CC_WEBROOT` | `/dist` | Folder served by the Static runtime (set once on the app) |
+A static app cannot read environment variables in the browser. On Clever Cloud, `scripts/write-config.sh`
+runs as `CC_PRE_RUN_HOOK` ("This hook runs every time", hooks documentation) and writes `dist/config.json`;
+the app fetches it with `cache: "no-store"`. Missing or invalid file: safe defaults.
 
-The app itself needs no environment variable: everything is computed in the browser.
+| Variable | Default | Visible effect |
+|----------------|----------------|----------------|
+| `APP_ENV` | `local` | environment pill on the bib (white when `production`) |
+| `ANNOUNCEMENT` | empty | gradient banner under the top bar |
+| `CLUB_NAME` | `RunRank Club` | bib header and goal sentence |
+| `GOAL_PACE` | `5:00` | goal flag on the rank track, "goal reached / s/km to gain", target time (`m:ss`, 2:00–12:00) |
+
+Platform variables shown on the bib: `INSTANCE_NUMBER`, `CC_PRETTY_INSTANCE_NAME`, `CC_APP_NAME`, `INSTANCE_TYPE`,
+`CC_COMMIT_ID`, `CC_DEPLOYMENT_ID` (`APP_ID` switches the "Live on Clever Cloud" pill).
+
+Change a variable in the console, run `clever restart`, reload: the page reflects it.
+
+Local test: `APP_ENV=production GOAL_PACE=4:30 sh scripts/write-config.sh && npx vite preview --port 8102`
+(run `npm run build` afterwards to restore the default `dist/config.json`).
 
 ---
 
@@ -96,9 +114,12 @@ The app itself needs no environment variable: everything is computed in the brow
 
 ```
 index.html                              → Vite source entry (head snippet + /src/main.tsx)
-src/app/App.tsx                         → page: topbar, hero, calculator, certification, Static panel, footer
+src/app/App.tsx                         → page: topbar, banner, pace + rank track + bib, certification, variables, footer
+src/app/config.ts                       → reads /config.json (no-store), parsing and defaults
+scripts/write-config.sh                 → CC_PRE_RUN_HOOK: env vars -> dist/config.json (POSIX sh, no dependency)
+public/config.json                      → default config copied to dist/
 src/app/components/clever/              → Clever Brand Kit components (logo, badge, topbar, cert, footer)
-src/app/components/                     → DistanceSelector, ResultCard, RankBadge (rank colours kept)
+src/app/components/                     → DistanceSelector, PaceTrack, RaceBib, RankBadge (rank colours kept)
 src/app/utils/calculations.ts           → pace, rank and percentile logic
 src/styles/cc-brand.css                 → shared Clever Brand Kit (copied as-is, do not edit)
 src/styles/index.css                    → demo-specific styles (rr-* classes)
