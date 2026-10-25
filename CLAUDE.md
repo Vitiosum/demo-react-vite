@@ -60,7 +60,7 @@ Déployée sur **Clever Cloud** (runtime Static), habillée avec le **Clever Bra
 - **Type d'app** : Static (`clever create --type static`), gabarit pico ou nano suffisant (aucun processus applicatif)
 - **App** : `app_c7280242-2f19-405a-a449-4d8f6468f0e7`, https://app-c7280242-2f19-405a-a449-4d8f6468f0e7.cleverapps.io/ ; en service du 2026-10-25 au 2026-11-05 (suppression planifiée après le tournage vidéo du 2026-11-04) ; après cette date, recréer avec `clever create --type static` + variables ci-dessous
 - **Build** : `vite build` en local → `dist/` **committé** ; aucun build côté plateforme (pas de `CC_BUILD_COMMAND`, aucun SSG détecté : Vite n'est pas dans la liste de l'auto-build)
-- **Serveur** : Static Web Server (SWS) sert `dist/` ; aucun add-on
+- **Serveur** : Caddy, via le `Caddyfile` à la racine (détecté par le runtime Static, lancé avec `caddy run` à la place de SWS) : sert `dist/` avec les en-têtes de sécurité (CSP, HSTS, nosniff, X-Frame-Options, Referrer-Policy, sans en-tête Server) ; aucun add-on
 
 ### Variables Clever à poser (une fois)
 
@@ -68,14 +68,14 @@ Déployée sur **Clever Cloud** (runtime Static), habillée avec le **Clever Bra
 |---|---|---|
 | `CC_WEBROOT` | `/dist` | runtime Static : « set the CC_WEBROOT environment variable, relative to the root of your project » |
 | `CC_PRE_RUN_HOOK` | `./scripts/write-config.sh` | hooks : « This hook runs every time. » et « Hooks have access to the environnement variables » |
-| `CC_OVERRIDE_BUILDCACHE` | `dist:scripts` | runtime Static : « if you define CC_WEBROOT, the build cache contains only some configuration files and the served directory » → sans elle, le script du hook manquerait lors d'un `clever restart` depuis le cache |
+| `CC_OVERRIDE_BUILDCACHE` | `dist:scripts:Caddyfile` | runtime Static : « if you define CC_WEBROOT, the build cache contains only some configuration files and the served directory » → sans elle, le script du hook et le Caddyfile manqueraient lors d'un `clever restart` depuis le cache |
 | `CC_HEALTH_CHECK_PATH` | `/config.json` | « If these paths don't return a 2xx response code, the deployment fails. » |
 | `CC_GIT_FULL_CLONE` | `false` | référence : « If set to false, the git repository is cloned with --depth 1 to speed up the deployment » (l'historique de `dist/` alourdit le clone) |
 
 ```bash
 clever env set CC_WEBROOT /dist
 clever env set CC_PRE_RUN_HOOK ./scripts/write-config.sh
-clever env set CC_OVERRIDE_BUILDCACHE dist:scripts
+clever env set CC_OVERRIDE_BUILDCACHE dist:scripts:Caddyfile
 clever env set CC_HEALTH_CHECK_PATH /config.json
 clever env set CC_GIT_FULL_CLONE false
 ```
@@ -93,13 +93,14 @@ Inutiles ici : `CC_CACHE_DEPENDENCIES` (aucune dépendance installée sur la pla
 
 Variables plateforme affichées (dossard) : `INSTANCE_NUMBER` (numéro du dossard), `CC_PRETTY_INSTANCE_NAME`, `CC_APP_NAME`, `INSTANCE_TYPE`, `CC_COMMIT_ID`, `CC_DEPLOYMENT_ID` ; `APP_ID` présent ⇒ pastille « Live on Clever Cloud ». En local : « injecté au déploiement ».
 
-**Pourquoi un hook** : une app statique ne voit pas les variables d'environnement. `scripts/write-config.sh` (sh, tr, sed, date : aucune dépendance) écrit `dist/config.json` avant chaque démarrage ; React le lit avec `fetch(..., { cache: "no-store" })`, ce qui contourne le cache HTTP de SWS (1 an sur js/css). Le fichier committé `public/config.json` → `dist/config.json` (valeurs vides) sert de repli ; fichier absent ou invalide ⇒ défauts, la page s'affiche quand même.
+**Pourquoi un hook** : une app statique ne voit pas les variables d'environnement. `scripts/write-config.sh` (sh, tr, sed, date : aucune dépendance) écrit `dist/config.json` avant chaque démarrage ; React le lit avec `fetch(..., { cache: "no-store" })`, et Caddy le sert en `Cache-Control: no-cache` (seuls les fichiers hashés de `dist/assets/` sont en cache long). Le fichier committé `public/config.json` → `dist/config.json` (valeurs vides) sert de repli ; fichier absent ou invalide ⇒ défauts, la page s'affiche quand même.
 
 ### Fichiers
 ```
 index.html               → entrée SOURCE Vite (CSP meta : connect-src 'self' autorise le fetch de config.json)
 public/config.json       → config par défaut (copiée dans dist/ au build)
 scripts/write-config.sh  → hook CC_PRE_RUN_HOOK : variables → dist/config.json
+Caddyfile                → serveur web (en-têtes de sécurité, cache), remplace SWS
 dist/                    → build servi (committé)
 ```
 
@@ -203,8 +204,8 @@ Pas de liaison GitHub → Clever Cloud (`clever create --github` refusé par l'A
 - `CC_WEBROOT=/dist` doit être posé sur l'app, sinon la racine (index.html source) est servie → page blanche
 - `src/vite-env.d.ts` référence `vite/client` pour que `npx tsc -p tsconfig.app.json --noEmit` passe (import CSS side-effect)
 - Les polices Google Fonts sont chargées via `<link>` dans `index.html` (repli `system-ui` / `ui-monospace`)
-- SWS met `index.html` en cache 1 jour : après un **redéploiement**, faire un rechargement forcé. Un `clever restart` (variables) ne pose pas ce problème, `config.json` étant lu sans cache
-- `npm run preview` renvoie `index.html` pour un fichier absent (repli SPA) : le JSON invalide est ignoré, défauts appliqués ; SWS renvoie 404, même effet
+- `index.html` et `config.json` sont servis en `no-cache` (Caddyfile) : un redéploiement est visible au rechargement suivant
+- `npm run preview` renvoie `index.html` pour un fichier absent (repli SPA) : le JSON invalide est ignoré, défauts appliqués ; Caddy renvoie 404, même effet
 
 ---
 
@@ -236,5 +237,5 @@ npm run build   # remet le dist/config.json par défaut avant de committer
 | Assets 404 | `dist/` non committé | `npm run build` + `git add dist/` + `clever deploy` |
 | Modifications non visibles | Oubli du `npm run build` avant déploiement | Toujours builder avant `clever deploy` |
 | Variables sans effet | `CC_PRE_RUN_HOOK` absent ou script non exécutable | `clever env set CC_PRE_RUN_HOOK ./scripts/write-config.sh` ; vérifier « write-config: … écrit » dans `clever logs` |
-| Déploiement KO après `clever restart` | script absent du cache de build | `clever env set CC_OVERRIDE_BUILDCACHE dist:scripts` |
+| Déploiement KO après `clever restart` | script ou Caddyfile absent du cache de build | `clever env set CC_OVERRIDE_BUILDCACHE dist:scripts:Caddyfile` |
 | Style cassé / fond blanc | `cc-brand.css` non importé dans `src/styles/index.css` | Vérifier l'ordre des `@import` (cc-brand en premier) |
