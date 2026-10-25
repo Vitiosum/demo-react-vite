@@ -15,6 +15,14 @@ const STATIC_DOC_URL = "https://www.clever.cloud/developers/doc/deploy/applicati
 const HOOKS_DOC_URL = "https://www.clever.cloud/developers/doc/develop/common-configuration/build-hooks/";
 const REPO_URL = "https://github.com/Vitiosum/demo-react-vite";
 
+// config.json affiché : sans APP_ID, commit raccourci à 7 caractères.
+function displayConfig(raw: Record<string, unknown>) {
+  const { APP_ID: _appId, ...rest } = raw;
+  void _appId;
+  if (typeof rest.CC_COMMIT_ID === "string") rest.CC_COMMIT_ID = rest.CC_COMMIT_ID.slice(0, 7);
+  return rest;
+}
+
 const digits = (v: string) => v.replace(/\D/g, "").slice(0, 2);
 const km = (d: number) => (Number.isInteger(d) ? `${d} km` : `${d.toLocaleString("fr-FR", { maximumFractionDigits: 3 })} km`);
 
@@ -89,10 +97,10 @@ export default function App() {
 
               <h1 id="pace-title" className="rr-pace cc-reveal" style={reveal(0)}>
                 <span className="rr-pace__lead">
-                  Ton {dist.short} en{" "}
+                  Votre {dist.short} en{" "}
                   {valid ? formatDuration(total) : "…"}, c'est
-                </span>
-                <span className={pace === null ? "rr-pace__num is-empty" : "rr-pace__num"} aria-live="polite">
+                </span>{" "}
+                <span className={pace === null ? "rr-pace__num is-empty" : "rr-pace__num"} aria-live="polite" aria-atomic="true">
                   {pace === null ? "0:00" : formatDuration(pace)}
                   <small>/km</small>
                 </span>
@@ -110,13 +118,13 @@ export default function App() {
                 </div>
               ) : (
                 <p className="rr-verdict rr-verdict--empty cc-reveal" style={reveal(1)}>
-                  Saisis un temps valide (minutes et secondes sous 60).
+                  Saisissez un temps valide (minutes et secondes sous 60).
                 </p>
               )}
 
-              <form className="rr-input cc-reveal" style={reveal(2)} onSubmit={(e) => e.preventDefault()} aria-label="Ta course">
+              <form className="rr-input cc-reveal" style={reveal(2)} onSubmit={(e) => e.preventDefault()} aria-label="Votre course">
                 <DistanceSelector value={distance} onChange={setDistance} />
-                <div className="rr-time" role="group" aria-label="Ton temps">
+                <div className="rr-time" role="group" aria-label="Votre temps">
                   {fields.map((f, i) => (
                     <label key={f.id} className="rr-time__cell" htmlFor={f.id}>
                       <input
@@ -142,7 +150,15 @@ export default function App() {
                 <PaceTrack pace={pace} rank={rank} goalPace={goalPace} club={club} />
               </div>
 
-              <div className="rr-band cc-reveal" style={reveal(4)} aria-label="Bracelet d'allure : temps de passage">
+              <div className="rr-board__cta cc-reveal" style={reveal(4)}>
+                <button type="button" className="cc-btn cc-btn--gradient" onClick={share} disabled={!valid}>
+                  {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
+                  {copied ? "Copié" : "Partager mon allure"}
+                </button>
+                <a className="cc-btn" href="#cert-title">Se certifier Clever Cloud ↓</a>
+              </div>
+
+              <div className="rr-band cc-reveal" style={reveal(5)} aria-label="Bracelet d'allure : temps de passage">
                 <span className="rr-band__title">Bracelet d'allure</span>
                 <ol>
                   {splitPoints(d).map((p) => (
@@ -157,13 +173,6 @@ export default function App() {
                 </span>
               </div>
 
-              <div className="rr-board__cta cc-reveal" style={reveal(5)}>
-                <button type="button" className="cc-btn" onClick={share} disabled={!valid}>
-                  {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
-                  {copied ? "Copié" : "Partager mon allure"}
-                </button>
-                <a className="cc-btn cc-btn--gradient" href="#cert-title">Se certifier Clever Cloud ↓</a>
-              </div>
             </div>
 
             <RaceBib platform={platform} />
@@ -205,7 +214,7 @@ export default function App() {
                 {platform.source === "CC_PRE_RUN_HOOK" ? "écrit par le hook" : platform.source === "absent" ? "absent" : "fichier du dépôt"}
               </span>
             </figcaption>
-            <pre>{platform.raw ? JSON.stringify(platform.raw, null, 2) : "// config.json absent : valeurs par défaut"}</pre>
+            <pre>{platform.raw ? JSON.stringify(displayConfig(platform.raw), null, 2) : "// config.json absent : valeurs par défaut"}</pre>
           </figure>
         </section>
       </main>

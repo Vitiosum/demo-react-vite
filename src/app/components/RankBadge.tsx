@@ -11,8 +11,8 @@ interface RankConfig {
 
 // Couleurs propres aux rangs (conservées telles quelles : elles font partie du jeu RunRank).
 export const rankConfigs: Record<RankType, RankConfig> = {
-  Iron:        { name: "Iron",        color: "#6E7179", emoji: "🏅", message: "Débute ton aventure — continue de courir !" },
-  Bronze:      { name: "Bronze",      color: "#CD7F32", emoji: "🥉", message: "Coureur débutant — tu progresses bien !" },
+  Iron:        { name: "Iron",        color: "#6E7179", emoji: "🏅", message: "Le début de l’aventure — continuez de courir !" },
+  Bronze:      { name: "Bronze",      color: "#CD7F32", emoji: "🥉", message: "Coureur débutant — belle progression !" },
   Silver:      { name: "Silver",      color: "#B0B8C0", emoji: "🥈", message: "Coureur régulier — beau travail !" },
   Gold:        { name: "Gold",        color: "#FFD700", emoji: "🥇", message: "Bon coureur — performance solide !" },
   Platinum:    { name: "Platinum",    color: "#00CED1", emoji: "🏆", message: "Coureur avancé — excellent niveau !" },

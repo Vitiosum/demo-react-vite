@@ -11,7 +11,9 @@ function Value({ value }: { value: string }) {
 // Dossard de course : le numéro est celui de l'instance qui a servi la page,
 // les lignes sont les variables lues dans config.json.
 export function RaceBib({ platform: p }: { platform: Platform }) {
-  const bib = p.instanceNumber ? p.instanceNumber.padStart(3, "0") : "000";
+  const n = Number(p.instanceNumber);
+  const hasInstance = p.instanceNumber !== "" && Number.isInteger(n) && n >= 0;
+  const bib = hasInstance ? String(n + 1).padStart(3, "0") : "000";
   const time = p.generatedAt ? new Date(p.generatedAt) : null;
   const written =
     time && !Number.isNaN(time.getTime())
@@ -29,12 +31,13 @@ export function RaceBib({ platform: p }: { platform: Platform }) {
         <span className={p.env === "production" ? "rr-env is-production" : "rr-env"}>{p.env}</span>
       </div>
       <div className="rr-bib__body">
-        <div className={p.instanceNumber ? "rr-bib__num" : "rr-bib__num is-empty"} aria-label={`Dossard ${bib}`}>
+        <div className={hasInstance ? "rr-bib__num" : "rr-bib__num is-empty"} aria-label={`Dossard ${bib}`}>
           {bib}
         </div>
         <div className="rr-bib__runner">
           {p.instanceName ? p.instanceName : "Instance locale"}
           {p.appName && <span> · {p.appName}</span>}
+          {hasInstance && <small>instance #{p.instanceNumber}</small>}
         </div>
 
         <ul className="rr-bib__vars" aria-label="Variables de démo">

@@ -43,7 +43,7 @@ export function PaceTrack({ pace, rank, goalPace, club }: PaceTrackProps) {
             className={runnerLabelRight ? "rr-track__runner is-ahead" : "rr-track__runner"}
             style={{ left: `${runner * 100}%`, "--c": rankConfigs[rank].color } as CSSProperties}
           >
-            <em>Toi</em>
+            <em>Vous</em>
           </span>
         )}
       </div>

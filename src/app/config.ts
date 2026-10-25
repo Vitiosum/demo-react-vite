@@ -66,7 +66,7 @@ export function toPlatform(raw: RawConfig | null): Platform {
     instanceName: str(raw, "CC_PRETTY_INSTANCE_NAME"),
     instanceType: str(raw, "INSTANCE_TYPE"),
     commit: str(raw, "CC_COMMIT_ID").slice(0, 7),
-    deployment: str(raw, "CC_DEPLOYMENT_ID").slice(0, 8),
+    deployment: str(raw, "CC_DEPLOYMENT_ID").slice(0, 16),
     raw,
   };
 }
