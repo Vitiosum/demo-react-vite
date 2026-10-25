@@ -207,7 +207,7 @@ git push
 
 ## 🎬 Scénario vidéo
 
-1. Ouvrir l'app : « Ton 10 km en 48:30, c'est 4:51 /km », rang Platinum, dossard avec le numéro d'instance.
+1. Ouvrir l'app : « Votre 10 km en 48:30, c'est 4:51 /km », rang Platinum, dossard 001 pour l'instance #0 (INSTANCE_NUMBER + 1).
 2. Changer la distance / le temps : l'allure, la piste et le bracelet suivent en direct. Lien partageable `?d=42.195&t=2:59:30`.
 3. Console Clever → Variables : poser `ANNOUNCEMENT`, `CLUB_NAME="Les Foulées Nantaises"`, `GOAL_PACE=4:30`, `APP_ENV=production`.
 4. `clever restart`, recharger : bandeau, nom du club sur le dossard, drapeau déplacé (« encore 21 s/km à gagner »), pastille production, pied du dossard « écrit par CC_PRE_RUN_HOOK à hh:mm:ss ».
