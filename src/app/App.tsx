@@ -1,218 +1,212 @@
-import { useState, useRef } from "react";
-import { AlertCircle } from "lucide-react";
-import { DistanceSelector } from "./components/DistanceSelector";
-import { ResultCard } from "./components/ResultCard";
+import { useState, type CSSProperties } from "react";
+import { Check, Share2 } from "lucide-react";
+import { DistanceSelector, distances } from "./components/DistanceSelector";
+import { PaceTrack } from "./components/PaceTrack";
+import { RaceBib } from "./components/RaceBib";
+import { rankConfigs } from "./components/RankBadge";
 import { CleverTopbar } from "./components/clever/CleverTopbar";
 import { CleverCert } from "./components/clever/CleverCert";
 import { CleverFooter } from "./components/clever/CleverFooter";
-import { isLiveOnCleverCloud } from "./components/clever/platform";
 import { reveal } from "./components/clever/reveal";
-import { calculateRunResult } from "./utils/calculations";
+import { usePlatform } from "./config";
+import { calculatePercentile, determineRank, formatDuration, splitPoints } from "./utils/calculations";
 
-const STATIC_DOC_URL = "https://www.clever.cloud/developers/doc/applications/static/";
+const STATIC_DOC_URL = "https://www.clever.cloud/developers/doc/deploy/applications/static/";
+const HOOKS_DOC_URL = "https://www.clever.cloud/developers/doc/develop/common-configuration/build-hooks/";
 const REPO_URL = "https://github.com/Vitiosum/demo-react-vite";
 
+const digits = (v: string) => v.replace(/\D/g, "").slice(0, 2);
+const km = (d: number) => (Number.isInteger(d) ? `${d} km` : `${d.toLocaleString("fr-FR", { maximumFractionDigits: 3 })} km`);
+
+// Lien partageable : ?d=42.195&t=3:29:59 (défaut : 10 km en 48:30).
+function initialRace(): { d: string; h: string; m: string; s: string } {
+  const q = new URLSearchParams(window.location.search);
+  const d = distances.some((x) => x.value === q.get("d")) ? (q.get("d") as string) : "10";
+  const t = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{2})$/.exec(q.get("t") ?? "");
+  return t ? { d, h: t[1] ?? "0", m: t[2], s: t[3] } : { d, h: "0", m: "48", s: "30" };
+}
+
 export default function App() {
-  const [distance, setDistance]           = useState("10");
-  const [hours, setHours]                 = useState("");
-  const [minutes, setMinutes]             = useState("");
-  const [seconds, setSeconds]             = useState("");
-  const [result, setResult]               = useState<ReturnType<typeof calculateRunResult>>(null);
-  const [error, setError]                 = useState("");
-  const [isCalculating, setIsCalculating] = useState(false);
+  const platform = usePlatform();
+  const [init] = useState(initialRace);
+  const [distance, setDistance] = useState(init.d);
+  const [hours, setHours] = useState(init.h);
+  const [minutes, setMinutes] = useState(init.m);
+  const [seconds, setSeconds] = useState(init.s);
+  const [copied, setCopied] = useState(false);
 
-  const minutesRef = useRef<HTMLInputElement>(null);
-  const secondsRef = useRef<HTMLInputElement>(null);
+  const d = Number(distance);
+  const dist = distances.find((x) => x.value === distance) ?? distances[1];
+  const h = Number(hours || 0);
+  const m = Number(minutes || 0);
+  const s = Number(seconds || 0);
+  const total = h * 3600 + m * 60 + s;
+  const valid = total > 0 && m < 60 && s < 60;
+  const pace = valid ? total / d : null;
+  const rank = valid ? determineRank(d, total / 60) : null;
+  const percentile = valid ? calculatePercentile(d, total / 60) : null;
+  const color = rank ? rankConfigs[rank].color : "var(--cc-muted)";
 
-  const live = isLiveOnCleverCloud();
+  const { goalPace, club } = platform;
+  const delta = pace === null ? 0 : Math.round(pace - goalPace);
 
-  const handleCalculate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    const h = parseInt(hours   || "0", 10);
-    const m = parseInt(minutes || "0", 10);
-    const s = parseInt(seconds || "0", 10);
-
-    if (h === 0 && m === 0 && s === 0) {
-      setError("Veuillez entrer un temps valide");
-      return;
+  const share = () => {
+    if (!valid || pace === null || !rank) return;
+    const url = `${window.location.origin}${window.location.pathname}?d=${distance}&t=${formatDuration(total)}`;
+    const text = `${dist.short} en ${formatDuration(total)} · ${formatDuration(pace)}/km · rang ${rank} (top ${percentile} %) #RunRank ${url}`;
+    if (navigator.share) {
+      navigator.share({ title: "Mon allure RunRank", text }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
-
-    setIsCalculating(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const distanceKm = parseInt(distance, 10);
-    const timeString =
-      h > 0
-        ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
-        : `${m}:${String(s).padStart(2, "0")}`;
-
-    const calculatedResult = calculateRunResult(distanceKm, timeString);
-    setIsCalculating(false);
-
-    if (!calculatedResult) {
-      setError("Temps invalide");
-      return;
-    }
-    setResult(calculatedResult);
   };
 
-  const handleReset = () => {
-    setResult(null);
-    setHours("");
-    setMinutes("");
-    setSeconds("");
-    setError("");
-  };
-
-  const handleHoursChange = (val: string) => {
-    setHours(val);
-    if (val.length >= 2) minutesRef.current?.focus();
-  };
-
-  const handleMinutesChange = (val: string) => {
-    setMinutes(val);
-    if (val.length >= 2 && parseInt(val) >= 10) secondsRef.current?.focus();
-  };
-
-  const timeFields = [
-    { id: "hours",   val: hours,   onChange: handleHoursChange,   ref: undefined,  max: 24, label: "Heures"   },
-    { id: "minutes", val: minutes, onChange: handleMinutesChange, ref: minutesRef, max: 59, label: "Minutes"  },
-    { id: "seconds", val: seconds, onChange: setSeconds,          ref: secondsRef, max: 59, label: "Secondes" },
+  const fields = [
+    { id: "hours", label: "h", name: "Heures", value: hours, set: setHours },
+    { id: "minutes", label: "min", name: "Minutes", value: minutes, set: setMinutes },
+    { id: "seconds", label: "s", name: "Secondes", value: seconds, set: setSeconds },
   ];
-
-  const displayedTime = hours
-    ? `${hours}:${String(minutes || "0").padStart(2, "0")}:${String(seconds || "0").padStart(2, "0")}`
-    : `${minutes}:${String(seconds || "0").padStart(2, "0")}`;
 
   return (
     <>
-      <CleverTopbar demo="RunRank" stack="React 18 · Vite 8 · Static" />
+      <CleverTopbar demo="RunRank" stack="React 18 · Vite 8 · Static" live={platform.live} />
 
-      <main>
-        {/* Héro */}
-        <section className="cc-hero">
+      {platform.announcement && (
+        <div className="rr-announce" role="status">
           <div className="cc-container">
-            <div className="cc-eyebrow cc-reveal" style={reveal(0)}>Runtime Static · Build Vite committé</div>
-            <h1 className="cc-hero__title cc-reveal" style={reveal(1)}>
-              RunRank, <span className="cc-grad-text">servi en statique.</span>
-            </h1>
-            <p className="cc-hero__lead cc-reveal" style={reveal(2)}>
-              Un calculateur d'allure React 18 buildé par Vite. <strong>Le build est committé dans{" "}
-              <span className="cc-kbd">dist/</span> et servi tel quel</strong> par le runtime Static de Clever Cloud :
-              aucun serveur, aucun build distant, rien à exécuter côté plateforme.
-            </p>
-            <ul className="cc-facts cc-reveal" style={reveal(3)}>
-              <li>Build Vite committé</li>
-              <li>Runtime Static, zéro serveur</li>
-              <li>HTTPS et domaine inclus</li>
-              <li>Déployé en un git push</li>
-            </ul>
+            <code>ANNOUNCEMENT</code>
+            <span>{platform.announcement}</span>
           </div>
-        </section>
+        </div>
+      )}
 
-        {/* Calculateur */}
-        <section className="cc-section" style={{ paddingTop: 0 }}>
-          <div className="cc-container">
-            <div className="rr-calc cc-reveal" style={reveal(4)}>
-              {!result ? (
-                <form className="cc-card cc-card--pad rr-form cc-reveal" style={reveal(0)} onSubmit={handleCalculate} noValidate>
-                  <div className="cc-section__head">
-                    <h2 className="cc-section__title">Calcule ton rang</h2>
-                    <span className="cc-section__sub">9 rangs · Iron → Challenger</span>
-                  </div>
+      <main id="top">
+        <div className="cc-container">
+          <section className="rr-board" aria-labelledby="pace-title">
+            <div className="rr-board__main">
 
-                  <div className="cc-field">
-                    <span className="cc-label">Distance</span>
-                    <DistanceSelector value={distance} onChange={setDistance} />
-                  </div>
+              <h1 id="pace-title" className="rr-pace cc-reveal" style={reveal(0)}>
+                <span className="rr-pace__lead">
+                  Ton {dist.short} en{" "}
+                  {valid ? formatDuration(total) : "…"}, c'est
+                </span>
+                <span className={pace === null ? "rr-pace__num is-empty" : "rr-pace__num"} aria-live="polite">
+                  {pace === null ? "0:00" : formatDuration(pace)}
+                  <small>/km</small>
+                </span>
+              </h1>
 
-                  <div className="cc-field">
-                    <label className="cc-label" htmlFor="hours">Ton temps</label>
-                    <div className="rr-time">
-                      {timeFields.map(({ id, val, onChange, ref, max, label }) => (
-                        <div key={id} className="rr-time__cell">
-                          <input
-                            id={id}
-                            ref={ref}
-                            type="number"
-                            inputMode="numeric"
-                            min="0"
-                            max={max}
-                            placeholder="00"
-                            aria-label={label}
-                            value={val}
-                            onChange={(e) => onChange(e.target.value)}
-                            className="cc-input rr-time__input"
-                          />
-                          <span className="rr-time__unit">{label}</span>
-                        </div>
-                      ))}
-                    </div>
-                    {error && (
-                      <div className="cc-error" role="alert">
-                        <AlertCircle size={15} aria-hidden="true" />
-                        {error}
-                      </div>
-                    )}
-                  </div>
-
-                  <button type="submit" className="cc-btn cc-btn--gradient rr-submit" disabled={isCalculating}>
-                    {isCalculating ? (
-                      <>
-                        <span className="rr-spinner" aria-hidden="true" />
-                        Calcul en cours…
-                      </>
-                    ) : (
-                      <>Calculer mon rang <span className="cc-btn__arrow">→</span></>
-                    )}
-                  </button>
-
-                  <p className="cc-card__hint rr-hint">Laisse les heures à 0 si tu cours moins d'1 heure.</p>
-                </form>
+              {valid && rank && pace !== null ? (
+                <div className="rr-verdict cc-reveal" style={reveal(1)}>
+                  <span className="rr-rank" style={{ "--c": color } as CSSProperties}>{rank}</span>
+                  <span>top {percentile} % des coureurs</span>
+                  <span className={delta <= 0 ? "rr-goal is-met" : "rr-goal"}>
+                    {delta <= 0
+                      ? `Objectif ${club} tenu : ${Math.abs(delta)} s/km d'avance`
+                      : `Objectif ${club} : encore ${delta} s/km à gagner`}
+                  </span>
+                </div>
               ) : (
-                <ResultCard
-                  distance={distance}
-                  time={displayedTime}
-                  pace={result.pace}
-                  percentile={result.percentile}
-                  rank={result.rank}
-                  onReset={handleReset}
-                />
+                <p className="rr-verdict rr-verdict--empty cc-reveal" style={reveal(1)}>
+                  Saisis un temps valide (minutes et secondes sous 60).
+                </p>
               )}
-            </div>
-          </div>
-        </section>
 
-        {/* Certification Clever Cloud */}
-        <CleverCert revealIndex={5} />
+              <form className="rr-input cc-reveal" style={reveal(2)} onSubmit={(e) => e.preventDefault()} aria-label="Ta course">
+                <DistanceSelector value={distance} onChange={setDistance} />
+                <div className="rr-time" role="group" aria-label="Ton temps">
+                  {fields.map((f, i) => (
+                    <label key={f.id} className="rr-time__cell" htmlFor={f.id}>
+                      <input
+                        id={f.id}
+                        className="rr-time__input"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        maxLength={2}
+                        aria-label={f.name}
+                        aria-invalid={f.id !== "hours" && Number(f.value || 0) > 59}
+                        value={f.value}
+                        onChange={(e) => f.set(digits(e.target.value))}
+                        onFocus={(e) => e.target.select()}
+                      />
+                      <span>{f.label}</span>
+                      {i < 2 && <i aria-hidden="true">:</i>}
+                    </label>
+                  ))}
+                </div>
+              </form>
 
-        {/* Panneau plateforme : runtime Static */}
-        <section className="cc-section" style={{ paddingTop: 0 }}>
-          <div className="cc-container">
-            <div className="cc-platform cc-reveal" style={reveal(6)}>
-              <div className="cc-platform__head">
-                <h3>Runtime Static</h3>
-                {live ? (
-                  <span className="cc-pill cc-pill--ok"><span className="cc-dot" />Production</span>
-                ) : (
-                  <span className="cc-pill cc-pill--muted"><span className="cc-dot cc-dot--muted" />Local · hors Clever Cloud</span>
-                )}
+              <div className="cc-reveal" style={reveal(3)}>
+                <PaceTrack pace={pace} rank={rank} goalPace={goalPace} club={club} />
               </div>
-              <dl className="cc-kv">
-                <div><dt>Runtime</dt><dd>Static</dd></div>
-                <div><dt>Webroot</dt><dd>/dist</dd></div>
-                <div><dt>Build</dt><dd>vite build · committé</dd></div>
-                <div><dt>HTTPS</dt><dd>automatique</dd></div>
-              </dl>
-              <div className="cc-platform__foot">
-                Le runtime Static sert les fichiers du dépôt sans exécuter de code ; le dossier servi se règle avec{" "}
-                <span className="cc-kbd">CC_WEBROOT</span> :{" "}
-                <a href={STATIC_DOC_URL} target="_blank" rel="noopener">documentation</a>.
+
+              <div className="rr-band cc-reveal" style={reveal(4)} aria-label="Bracelet d'allure : temps de passage">
+                <span className="rr-band__title">Bracelet d'allure</span>
+                <ol>
+                  {splitPoints(d).map((p) => (
+                    <li key={p}>
+                      <span>{km(p)}</span>
+                      <b>{pace === null ? "–" : formatDuration(pace * p)}</b>
+                    </li>
+                  ))}
+                </ol>
+                <span className="rr-band__goal">
+                  À l'objectif {formatDuration(goalPace)}/km : <b>{formatDuration(goalPace * d)}</b>
+                </span>
+              </div>
+
+              <div className="rr-board__cta cc-reveal" style={reveal(5)}>
+                <button type="button" className="cc-btn" onClick={share} disabled={!valid}>
+                  {copied ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
+                  {copied ? "Copié" : "Partager mon allure"}
+                </button>
+                <a className="cc-btn cc-btn--gradient" href="#cert-title">Se certifier Clever Cloud ↓</a>
               </div>
             </div>
+
+            <RaceBib platform={platform} />
+          </section>
+        </div>
+
+        <CleverCert />
+
+        <section id="config" className="cc-container rr-config" aria-labelledby="config-title">
+          <div className="rr-config__text">
+            <h2 id="config-title">Une app statique qui lit ses variables d'environnement</h2>
+            <p>
+              Le navigateur ne voit pas les variables de l'app. Avant chaque démarrage, Clever Cloud lance le hook{" "}
+              <span className="cc-kbd">CC_PRE_RUN_HOOK</span> : un script shell écrit <span className="cc-kbd">dist/config.json</span>,
+              que React lit sans cache. Changez <span className="cc-kbd">GOAL_PACE</span> dans la console, faites un{" "}
+              <span className="cc-kbd">clever restart</span>, rechargez : le drapeau bouge.
+            </p>
+            <ol className="rr-flow">
+              <li><b>Console › Variables</b><span>APP_ENV, ANNOUNCEMENT, CLUB_NAME, GOAL_PACE</span></li>
+              <li><b>CC_PRE_RUN_HOOK</b><span>scripts/write-config.sh, à chaque démarrage</span></li>
+              <li><b>dist/config.json</b><span>servi par Static Web Server</span></li>
+              <li><b>fetch(…, no-store)</b><span>lu au chargement, sans cache navigateur</span></li>
+            </ol>
+            <dl className="rr-config__kv">
+              <div><dt>Runtime</dt><dd>Static</dd></div>
+              <div><dt>Webroot</dt><dd>CC_WEBROOT=/dist</dd></div>
+              <div><dt>Build distant</dt><dd>aucun, dist/ committé</dd></div>
+              <div><dt>Serveur</dt><dd>Static Web Server</dd></div>
+            </dl>
+            <p className="rr-config__doc">
+              <a href={STATIC_DOC_URL} target="_blank" rel="noopener">Runtime Static</a> ·{" "}
+              <a href={HOOKS_DOC_URL} target="_blank" rel="noopener">Deployment hooks</a>
+            </p>
           </div>
+          <figure className="rr-json">
+            <figcaption>
+              <span>GET /config.json</span>
+              <span className={platform.source === "CC_PRE_RUN_HOOK" ? "rr-json__src is-hook" : "rr-json__src"}>
+                {platform.source === "CC_PRE_RUN_HOOK" ? "écrit par le hook" : platform.source === "absent" ? "absent" : "fichier du dépôt"}
+              </span>
+            </figcaption>
+            <pre>{platform.raw ? JSON.stringify(platform.raw, null, 2) : "// config.json absent : valeurs par défaut"}</pre>
+          </figure>
         </section>
       </main>
 
@@ -221,7 +215,8 @@ export default function App() {
         runtimeDocUrl={STATIC_DOC_URL}
         runtimeDocLabel="Runtime Static"
         extraDocs={[
-          { label: "Variables d'environnement", href: "https://www.clever.cloud/developers/doc/reference/reference-environment-variables/" },
+          { label: "Deployment hooks", href: HOOKS_DOC_URL },
+          { label: "Variables d'environnement", href: "https://www.clever.cloud/developers/doc/develop/common-configuration/environment-variables/reference/" },
         ]}
       />
     </>

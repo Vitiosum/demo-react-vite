@@ -3,11 +3,11 @@ interface DistanceSelectorProps {
   onChange: (value: string) => void;
 }
 
-const distances = [
-  { value: "5",  label: "5K",       subtitle: "~25–35 min" },
-  { value: "10", label: "10K",      subtitle: "~50–70 min" },
-  { value: "21", label: "Semi",     subtitle: "~1h45–2h30" },
-  { value: "42", label: "Marathon", subtitle: "~3h30–5h"   },
+export const distances = [
+  { value: "5",       label: "5K",       subtitle: "5 km",      short: "5 km" },
+  { value: "10",      label: "10K",      subtitle: "10 km",     short: "10 km" },
+  { value: "21.0975", label: "Semi",     subtitle: "21,1 km",   short: "semi" },
+  { value: "42.195",  label: "Marathon", subtitle: "42,195 km", short: "marathon" },
 ];
 
 export function DistanceSelector({ value, onChange }: DistanceSelectorProps) {

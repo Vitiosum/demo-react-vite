@@ -96,6 +96,46 @@ export function getNextRank(rank: RankType): { rank: RankType; targetPace: strin
   return nextRankThresholds[rank] ?? null;
 }
 
+// Échelle des rangs : allure max (s/km) de chaque rang, du plus lent au plus rapide.
+// Iron va jusqu'à 8:30 sur la piste affichée, Challenger jusqu'à 2:30.
+export const PACE_SCALE = { slowest: 510, fastest: 150 };
+export const RANK_LADDER: { rank: RankType; from: number; to: number }[] = [
+  { rank: 'Iron',        from: 510, to: 450 },
+  { rank: 'Bronze',      from: 450, to: 390 },
+  { rank: 'Silver',      from: 390, to: 330 },
+  { rank: 'Gold',        from: 330, to: 300 },
+  { rank: 'Platinum',    from: 300, to: 270 },
+  { rank: 'Diamond',     from: 270, to: 240 },
+  { rank: 'Master',      from: 240, to: 210 },
+  { rank: 'Grandmaster', from: 210, to: 180 },
+  { rank: 'Challenger',  from: 180, to: 150 },
+];
+
+/** Position (0 → 1, de gauche à droite) d'une allure en s/km sur la piste. */
+export function paceToPosition(paceSec: number): number {
+  const { slowest, fastest } = PACE_SCALE;
+  return Math.min(1, Math.max(0, (slowest - paceSec) / (slowest - fastest)));
+}
+
+/** 290 → « 4:50 » ; 3725 → « 1:02:05 ». */
+export function formatDuration(totalSec: number): string {
+  const s = Math.round(totalSec);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const ss = String(sec).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+}
+
+/** Points de passage du bracelet d'allure : chaque km jusqu'à 10 km, puis tous les 5 km. */
+export function splitPoints(distanceKm: number): number[] {
+  const step = distanceKm > 10.5 ? 5 : 1;
+  const points: number[] = [];
+  for (let km = step; km < distanceKm - 0.05; km += step) points.push(km);
+  points.push(distanceKm);
+  return points;
+}
+
 // Main calculation function
 export function calculateRunResult(distanceKm: number, timeInput: string): RunResult | null {
   const timeMinutes = parseTime(timeInput);
