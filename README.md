@@ -1,144 +1,112 @@
-# RunRank React — Race pace calculator on Clever Cloud
+# RunRank, the Race Pace Calculator — Static runtime on Clever Cloud
 
-> A React 18 + Vite 8 + TypeScript running pace calculator deployed as a **Static** app on Clever Cloud. No server, no remote build: the Vite build is committed in `dist/` and served as-is.
+> Type a distance and a time: your pace shows up in huge type, a rank track from Iron to Challenger places you against the club's goal pace, and a race bib shows which instance served the page. React 18, Vite 8 and TypeScript, built on your machine and committed in `dist/`: the **Clever Cloud Static runtime** serves it as-is, with no remote build and no application process. The environment variables still reach the page: a pre-run hook writes them into `config.json` before every start, and a `Caddyfile` adds the security headers the default server cannot set.
 
----
+![The calculator run locally: a 10 km in 48:30 is 4:51 /km, Platinum on the rank track, and the race bib with its default values](docs/screenshot-desktop.png)
+
+<img src="docs/screenshot-phone.png" alt="A share link opened on a phone, run locally: a marathon in 2:59:30 is 4:15 /km, Diamond" width="300">
+
+**Run it yourself.** The hosted demo was taken down after the presales review (November 2026). The steps in [Deploy on Clever Cloud](#deploy-on-clever-cloud) recreate it from scratch in about 2 minutes.
+
+## What the Static runtime does here
+
+| Where | Clever feature | What you see |
+|---|---|---|
+| `dist/` | Static runtime, `CC_WEBROOT=/dist` | The committed Vite build, served as-is. Without `CC_WEBROOT`, the repo root and its source `index.html` are served: a blank page |
+| Every start, deploy and `clever restart` | `CC_PRE_RUN_HOOK=./scripts/write-config.sh` ("This hook runs every time", hooks documentation) writes the app's variables to `dist/config.json` | The bib, the banner, the club name and the goal flag follow the console; the bib footer says « config.json écrit par CC_PRE_RUN_HOOK à hh:mm:ss » |
+| Web server | The `Caddyfile` at the repo root, detected by the Static runtime and run (`caddy run`) instead of the default server (SWS), which cannot set HTTP headers | CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, no `Server` header; long cache on the hashed `dist/assets/` files only, `index.html` and `config.json` in `no-cache` |
+| Restart from the build cache | `CC_OVERRIDE_BUILDCACHE=dist:scripts:Caddyfile` | The hook script and the `Caddyfile` are still there after a `clever restart` (checked in production on 2026-10-25, deploy and restart) |
+| Deploy | `CC_HEALTH_CHECK_PATH=/config.json`, `CC_GIT_FULL_CLONE=false` | The deployment is validated once `config.json` is served; the repo is cloned with `--depth 1`, so the history of `dist/` does not slow it down |
+
+The Static runtime does **not** read `clevercloud/static.json`: the served folder is set with the `CC_WEBROOT` environment variable (relative to the repo root, default `/`). See the [Static runtime documentation](https://www.clever.cloud/developers/doc/applications/static/).
 
 ## Deploy on Clever Cloud
 
-1. Fork this repository
-2. Run the build locally: `npm run build` (output goes to `dist/`)
-3. Commit the build output: `git add . && git commit -m "build: production"`
-4. Create a **Static** application with clever-tools (`clever create --type static`). There is no GitHub link: `clever create --github` is refused by the API ("wrong oauth application data"; the account's GitHub integration must be reconnected in the Console)
-5. Set the runtime variables once (with [clever-tools](https://www.clever.cloud/developers/doc/cli/)):
-   ```bash
-   clever env set CC_WEBROOT /dist                              # folder served
-   clever env set CC_PRE_RUN_HOOK ./scripts/write-config.sh     # env vars -> dist/config.json, on every start
-   clever env set CC_OVERRIDE_BUILDCACHE dist:scripts           # keep the hook script in the build cache (restarts)
-   clever env set CC_HEALTH_CHECK_PATH /config.json
-   clever env set CC_GIT_FULL_CLONE false                       # shallow clone, faster deploys
-   ```
-6. `git push` (GitHub backup), then `clever deploy` → Clever Cloud serves `dist/`. A plain `git push` does not redeploy.
-
-Live app from 2026-10-25 to 2026-11-05 (deletion planned after the 2026-11-04 video shoot): `app_c7280242-2f19-405a-a449-4d8f6468f0e7`, https://app-c7280242-2f19-405a-a449-4d8f6468f0e7.cleverapps.io/. After that date, recreate it with the procedure above.
-
-> **Note:** the Static runtime does not read `clevercloud/static.json`; the served folder is set with the `CC_WEBROOT` environment variable (relative to the repo root, default `/`). See the [Static runtime documentation](https://www.clever.cloud/developers/doc/applications/static/).
-
----
-
-## Stack
-
-| Layer     | Technology          |
-|-----------|---------------------|
-| Framework | React 18            |
-| Build     | Vite 8              |
-| Language  | TypeScript 6        |
-| Styles    | Tailwind CSS 4 + `src/styles/cc-brand.css` |
-| Icons     | lucide-react        |
-| Design    | Clever Brand Kit (Plus Jakarta Sans, navy #13172e, dégradé Clever) |
-
----
-
-## Features
-
-- Live pace calculator: the first screen shows your pace in huge type, updated as you type
-- Rank track: 9 lanes from Iron to Challenger, your marker and the club goal flag (`GOAL_PACE`)
-- Pace band (split times) and a race bib showing the Clever Cloud instance that served the page
-- Shareable link: `?d=42.195&t=2:59:30`
-- Clever Cloud chrome: top bar, `ANNOUNCEMENT` banner, **certification block** right under the first screen, footer
-- Fully responsive — mobile-first, no horizontal scroll at 375 px
-
----
-
-## Certification Clever Cloud
-
-The demo puts the [Clever Cloud Academy](https://academy.clever.cloud/) front and centre, right under the calculator: two official tracks (**Cloud Computing Fundamentals**, **Advanced Deployment**) and a digital badge delivered automatically on validation.
-
-→ https://academy.clever.cloud/
-
----
-
-## Local Development
-
-### Prerequisites
-
-- Node.js 20+
-- npm
-
-### Run
+You need [clever-tools](https://www.clever.cloud/developers/doc/cli/) (`clever login` done) and the ID of the organisation that will own the resources (`orga_…`, shown in the Console). Run the commands from the repo root: `clever create` links the folder to the new app. The build is already committed in `dist/`; after a change, run `npm run build` and commit `dist/` before deploying, or Clever Cloud keeps serving the previous version.
 
 ```bash
-git clone https://github.com/Vitiosum/demo-react-vite
-cd demo-react-vite
+# 1. The app and its size (Static: nothing is built on Clever Cloud)
+clever create --type static demo-react-vite --org <org_id> --region par
+clever scale --min-flavor nano --max-flavor XS --min-instances 1 --max-instances 2
+
+# 2. Variables
+clever env set CC_WEBROOT /dist                                # folder served
+clever env set CC_PRE_RUN_HOOK ./scripts/write-config.sh       # env vars -> dist/config.json, on every start
+clever env set CC_OVERRIDE_BUILDCACHE dist:scripts:Caddyfile   # keep the hook script and the Caddyfile for restarts
+clever env set CC_HEALTH_CHECK_PATH /config.json
+clever env set CC_GIT_FULL_CLONE false                         # shallow clone, faster deploys
+
+# 3. Deploy
+clever deploy
+clever open
+```
+
+No add-on. To show the variables live, then `clever restart` and reload: the banner appears, the club name changes on the bib, the goal flag moves (« encore 21 s/km à gagner » for the default 10 km in 48:30) and the pill turns to `production`.
+
+```bash
+clever env set ANNOUNCEMENT "Démo live"
+clever env set CLUB_NAME "Les Foulées Nantaises"
+clever env set GOAL_PACE 4:30
+clever env set APP_ENV production
+clever restart
+```
+
+## Variables
+
+| Variable | Set by | Role |
+|---|---|---|
+| `CC_WEBROOT` | you | `/dist`, the folder served |
+| `CC_PRE_RUN_HOOK` | you | `./scripts/write-config.sh`: writes `dist/config.json` before every start |
+| `CC_OVERRIDE_BUILDCACHE` | you | `dist:scripts:Caddyfile`: with `CC_WEBROOT` set, the build cache keeps only the served folder and a few configuration files, so the hook and the `Caddyfile` must be listed |
+| `CC_HEALTH_CHECK_PATH` | you | `/config.json` |
+| `CC_GIT_FULL_CLONE` | you | `false`: clone with `--depth 1` |
+| `APP_ENV` | optional, default `local` | Environment pill on the bib (solid navy when `production`) |
+| `ANNOUNCEMENT` | optional, empty | Gradient banner under the top bar |
+| `CLUB_NAME` | optional, default `RunRank Club` | Bib header and goal sentence |
+| `GOAL_PACE` | optional, default `5:00` | Goal flag on the rank track, goal sentence (held, or s/km to gain), target time on the pace band. `m:ss` between 2:00 and 12:00; anything else falls back to the default and the bib says the value was ignored |
+
+A static app cannot read environment variables in the browser: the hook copies them into `dist/config.json` and the app fetches it with `cache: "no-store"`. Missing or invalid file: safe defaults, the page still renders. The bib also shows `INSTANCE_NUMBER`, `CC_PRETTY_INSTANCE_NAME`, `CC_APP_NAME`, `INSTANCE_TYPE`, `CC_COMMIT_ID` and `CC_DEPLOYMENT_ID`; `APP_ID` switches the *Live on Clever Cloud* pill. Locally they read « injecté au déploiement ».
+
+## Routes
+
+`/` the calculator; share link `?d=<5|10|21.0975|42.195>&t=<h:mm:ss>` (default 10 km in 48:30) · `/config.json` written by the hook, also the health check · `/assets/*` hashed Vite files, cached for a year. Anything else answers 404 (Caddy).
+
+## Code tour
+
+```
+index.html                     Vite source entry (head snippet + /src/main.tsx)
+src/app/App.tsx                page: top bar, banner, pace + rank track + bib, certification, variables, footer
+src/app/config.ts              reads /config.json (no-store), parsing and defaults
+src/app/utils/calculations.ts  pace, rank and percentile logic
+src/app/components/            DistanceSelector, PaceTrack, RaceBib, RankBadge
+src/app/components/clever/     Clever Brand Kit components (logo, badge, top bar, certification, footer)
+src/styles/cc-brand.css        shared Clever Brand Kit (copied as-is, do not edit)
+src/styles/index.css           demo styles (rr-* classes)
+public/config.json             default config, copied to dist/
+scripts/write-config.sh        CC_PRE_RUN_HOOK: env vars -> dist/config.json (POSIX sh, no dependency)
+Caddyfile                      web server: serves dist/ only, security headers, cache rules
+dist/                          committed production build served by Clever Cloud
+```
+
+React 18, Vite 8, TypeScript 6, Tailwind CSS 4, lucide-react. `vite.config.ts` sets `build.outDir: 'dist'` with `emptyOutDir: true`.
+
+## Run locally
+
+```bash
 npm install
-npm run dev
-# → http://localhost:5173
+npm run dev                    # http://localhost:5173
+npm run build                  # dist/index.html + dist/assets/, then commit dist/
 ```
 
-### Build for deployment
+Test the variables on the built app, then restore the default `dist/config.json` before committing:
 
 ```bash
-npm run build          # → dist/index.html + dist/assets/
-npm run preview        # optional: serve dist/ locally
-git add .
-git commit -m "build: production"
-git push               # GitHub backup only
-clever deploy          # deploys main to Clever Cloud (no GitHub link: push alone does not redeploy)
+APP_ENV=production GOAL_PACE=4:30 sh scripts/write-config.sh && npx vite preview --port 8102
+npm run build
 ```
 
-> **Always run `npm run build` before deploying.** The Static runtime serves the committed `dist/` folder; without a fresh build, Clever Cloud keeps serving the previous version.
+Requires Node.js 20+. The screenshots above come from the committed `dist/` served locally (hence « Local · hors Clever Cloud » and the default values on the bib).
 
----
+## License
 
-## Environment Variables
-
-A static app cannot read environment variables in the browser. On Clever Cloud, `scripts/write-config.sh`
-runs as `CC_PRE_RUN_HOOK` ("This hook runs every time", hooks documentation) and writes `dist/config.json`;
-the app fetches it with `cache: "no-store"`. Missing or invalid file: safe defaults.
-
-| Variable | Default | Visible effect |
-|----------------|----------------|----------------|
-| `APP_ENV` | `local` | environment pill on the bib (white when `production`) |
-| `ANNOUNCEMENT` | empty | gradient banner under the top bar |
-| `CLUB_NAME` | `RunRank Club` | bib header and goal sentence |
-| `GOAL_PACE` | `5:00` | goal flag on the rank track, "goal reached / s/km to gain", target time (`m:ss`, 2:00–12:00) |
-
-Platform variables shown on the bib: `INSTANCE_NUMBER`, `CC_PRETTY_INSTANCE_NAME`, `CC_APP_NAME`, `INSTANCE_TYPE`,
-`CC_COMMIT_ID`, `CC_DEPLOYMENT_ID` (`APP_ID` switches the "Live on Clever Cloud" pill).
-
-Change a variable in the console, run `clever restart`, reload: the page reflects it.
-
-Local test: `APP_ENV=production GOAL_PACE=4:30 sh scripts/write-config.sh && npx vite preview --port 8102`
-(run `npm run build` afterwards to restore the default `dist/config.json`).
-
----
-
-## Project layout
-
-```
-index.html                              → Vite source entry (head snippet + /src/main.tsx)
-src/app/App.tsx                         → page: topbar, banner, pace + rank track + bib, certification, variables, footer
-src/app/config.ts                       → reads /config.json (no-store), parsing and defaults
-scripts/write-config.sh                 → CC_PRE_RUN_HOOK: env vars -> dist/config.json (POSIX sh, no dependency)
-public/config.json                      → default config copied to dist/
-src/app/components/clever/              → Clever Brand Kit components (logo, badge, topbar, cert, footer)
-src/app/components/                     → DistanceSelector, PaceTrack, RaceBib, RankBadge (rank colours kept)
-src/app/utils/calculations.ts           → pace, rank and percentile logic
-src/styles/cc-brand.css                 → shared Clever Brand Kit (copied as-is, do not edit)
-src/styles/index.css                    → demo-specific styles (rr-* classes)
-dist/                                   → committed production build served by Clever Cloud
-```
-
----
-
-## Deployment Notes
-
-- `vite.config.ts` sets `build.outDir: 'dist'` with `emptyOutDir: true`
-- `dist/` is **committed** on purpose (no build step on the Static runtime)
-- `CC_WEBROOT=/dist` must be set on the Clever Cloud application you deploy to, whatever its id (`clever env set CC_WEBROOT /dist`, or Console → *Environment variables*)
-- Design spec: `docs/superpowers/specs/2026-09-06-clever-brand-design.md`
-
-## Security and web server
-
-The Static runtime's default server (SWS) cannot set HTTP headers. The root `Caddyfile` is detected by the runtime and run (`caddy run`) instead: it serves `dist/` only, sets CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, drops the `Server` header, caches only hashed `dist/assets/` files long-term and serves `index.html`/`config.json` with `no-cache`. Keep it in `CC_OVERRIDE_BUILDCACHE` (`dist:scripts:Caddyfile`) so a `clever restart` from the build cache still has it.
-
+[MIT](LICENSE) © 2026 [Vitiosum](https://github.com/Vitiosum)
