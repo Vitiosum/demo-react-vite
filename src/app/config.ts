@@ -26,6 +26,7 @@ export interface Platform {
   /** false si GOAL_PACE est renseignée mais illisible (le défaut s'applique). */
   goalPaceValid: boolean;
   appName: string;
+  appId: string;
   instanceNumber: string;
   instanceName: string;
   instanceType: string;
@@ -62,6 +63,7 @@ export function toPlatform(raw: RawConfig | null): Platform {
     goalPace: parsePace(goalRaw) ?? DEFAULT_GOAL_PACE,
     goalPaceValid: goalRaw === "" || parsePace(goalRaw) !== null,
     appName: str(raw, "CC_APP_NAME"),
+    appId: str(raw, "APP_ID"),
     instanceNumber: str(raw, "INSTANCE_NUMBER"),
     instanceName: str(raw, "CC_PRETTY_INSTANCE_NAME"),
     instanceType: str(raw, "INSTANCE_TYPE"),

@@ -23,7 +23,8 @@ export function CleverTopbar({ demo, stack, live }: CleverTopbarProps) {
         </a>
         <span className="cc-topbar__spacer" />
         <nav className="cc-topbar__nav" aria-label="Navigation">
-          <a className="cc-topbar__link" href="#top">Allure</a>
+          <a className="cc-topbar__link" href="#top">Stade</a>
+          <a className="cc-topbar__link" href="#static">Runtime Static</a>
           <a className="cc-topbar__link" href="#config">Variables</a>
           <span className="cc-pill cc-pill--mono cc-hide-sm">{stack}</span>
           {live ? (

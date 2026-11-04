@@ -49,6 +49,7 @@ Tu dois raisonner avec fermeté : ne propose pas plusieurs pistes floues si une 
 
 App React + Vite de classement de course à pied **RunRank**.
 L'utilisateur saisit une distance (5k, 10k, semi, marathon) et un temps, l'app calcule l'allure et attribue un rang (Iron → Challenger) avec un score percentile.
+Univers visuel : **un stade d'athlétisme la nuit** (refonte du 2026-11-04). Tableau d'affichage LED (police Doto) posé dans la pelouse, piste de 400 m vue de haut où « Vous » tourne à votre allure à côté de lièvres de référence (2 h et 4 h 30 au marathon, de simples divisions) et des feux de cadence verts à `GOAL_PACE` (course accélérée ×20) ; le lien de partage est imprimé sur le dossard ; la section « runtime Static » montre un photo-finish des fichiers reçus (Resource Timing), une fiche d'homologation des en-têtes (HEAD de la page sur elle-même) et la feuille de départ (`config.json`).
 App 100% statique — pas de backend, pas d'API, tout est calculé côté client.
 
 Déployée sur **Clever Cloud** (runtime Static), habillée avec le **Clever Brand Kit** (certification Clever Cloud mise en avant).
@@ -86,12 +87,12 @@ Inutiles ici : `CC_CACHE_DEPENDENCIES` (aucune dépendance installée sur la pla
 
 | Variable | Défaut | Effet visible |
 |---|---|---|
-| `APP_ENV` | `local` | pastille du dossard ; fond blanc si `production` |
-| `ANNOUNCEMENT` | vide | bandeau dégradé sous la topbar si non vide |
-| `CLUB_NAME` | `RunRank Club` | bandeau du dossard + phrase « Objectif <club> … » |
-| `GOAL_PACE` | `5:00` | drapeau « Objectif » sur la piste des rangs, verdict tenu / à gagner, temps cible du bracelet. Format `m:ss` entre 2:00 et 12:00, sinon défaut + mention « valeur invalide ignorée » |
+| `APP_ENV` | `local` | pastille du dossard ; navy plein si `production` |
+| `ANNOUNCEMENT` | vide | panneau LED défilant sous la topbar si non vide (fixe si mouvement réduit) |
+| `CLUB_NAME` | `RunRank Club` | bandeau du dossard + phrase « Objectif <club> … » du tableau + feux de cadence du classement |
+| `GOAL_PACE` | `5:00` | vitesse des feux de cadence verts sur la piste, drapeau « Objectif » sur l'échelle des rangs du tableau, verdict tenu / à gagner, temps cible du bracelet. Format `m:ss` entre 2:00 et 12:00, sinon défaut + mention « valeur invalide ignorée » sur le dossard |
 
-Variables plateforme affichées (dossard) : `INSTANCE_NUMBER` (numéro du dossard), `CC_PRETTY_INSTANCE_NAME`, `CC_APP_NAME`, `INSTANCE_TYPE`, `CC_COMMIT_ID`, `CC_DEPLOYMENT_ID` ; `APP_ID` présent ⇒ pastille « Live on Clever Cloud ». En local : « injecté au déploiement ».
+Variables plateforme affichées (panneau « Running on Clever Cloud ») : `CC_APP_NAME`, `APP_ID`, `INSTANCE_NUMBER`, `INSTANCE_TYPE`, `CC_PRETTY_INSTANCE_NAME`, `CC_COMMIT_ID` (court), `CC_DEPLOYMENT_ID` ; numéro du dossard = `INSTANCE_NUMBER` + 1 ; `APP_ID` présent ⇒ pastille « Live on Clever Cloud ». En local : « injecté au déploiement », panneau « Local ».
 
 **Pourquoi un hook** : une app statique ne voit pas les variables d'environnement. `scripts/write-config.sh` (sh, tr, sed, date : aucune dépendance) écrit `dist/config.json` avant chaque démarrage ; React le lit avec `fetch(..., { cache: "no-store" })`, et Caddy le sert en `Cache-Control: no-cache` (seuls les fichiers hashés de `dist/assets/` sont en cache long). Le fichier committé `public/config.json` → `dist/config.json` (valeurs vides) sert de repli ; fichier absent ou invalide ⇒ défauts, la page s'affiche quand même.
 
@@ -111,7 +112,7 @@ dist/                    → build servi (committé)
 
 ## 🔒 Sécurité et serveur web
 
-Le serveur par défaut du runtime Static (SWS) ne permet pas de poser d'en-têtes HTTP. Le `Caddyfile` à la racine est détecté par le runtime et lancé (`caddy run`) à sa place : il ne sert que `dist/`, pose CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, retire l'en-tête `Server`, met en cache long les seuls fichiers hashés de `dist/assets/` et sert `index.html`/`config.json` en `no-cache`. Il doit figurer dans `CC_OVERRIDE_BUILDCACHE` (`dist:scripts:Caddyfile`), sinon un `clever restart` repartirait sans lui (vérifié en production le 2026-10-25, deploy et restart).
+Le serveur par défaut du runtime Static (SWS) ne permet pas de poser d'en-têtes HTTP. Le `Caddyfile` à la racine est détecté par le runtime et lancé (`caddy run`) à sa place : il ne sert que `dist/` (root `{$APP_HOME:.}/{$APP_FOLDER:.}/dist` : identique en dépôt autonome, et correct depuis le catalogue déployé avec `APP_FOLDER`, testé sur Clever le 2026-11-04), pose CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, retire l'en-tête `Server`, met en cache long les seuls fichiers hashés de `dist/assets/` et sert `index.html`/`config.json` en `no-cache`. Il doit figurer dans `CC_OVERRIDE_BUILDCACHE` (`dist:scripts:Caddyfile`), sinon un `clever restart` repartirait sans lui (vérifié en production le 2026-10-25, deploy et restart).
 
 ## 🛠️ Stack
 
@@ -131,18 +132,24 @@ Le serveur par défaut du runtime Static (SWS) ne permet pas de poser d'en-tête
 ```
 index.html                                → entrée Vite source
 src/main.tsx                              → montage React + import src/styles/index.css
-src/app/App.tsx                           → page : topbar → bandeau ANNOUNCEMENT → allure + piste + bracelet | dossard → certification → section Variables (config.json) → footer
+src/app/App.tsx                           → page : topbar → panneau LED ANNOUNCEMENT → stade (tableau + piste) → classement + bracelet + Running on Clever Cloud | dossard → certification (médaille) → runtime Static (photo-finish, homologation, feuille de départ #config) → footer
 src/app/config.ts                         → lecture de /config.json (fetch no-store), parsing robuste, défauts
-src/app/components/PaceTrack.tsx          → piste des 9 rangs, marqueur « Toi » et drapeau GOAL_PACE
-src/app/components/RaceBib.tsx            → dossard : instance, APP_ENV, CLUB_NAME, GOAL_PACE, variables plateforme
+src/app/utils/hares.ts                    → lièvres de référence, accélération ×20 de la piste
+src/app/components/Scoreboard.tsx         → tableau d'affichage LED : épreuve, temps, allure, rang, objectif, échelle des rangs
+src/app/components/PaceTrack.tsx          → échelle des 9 rangs en LED, marqueur « Vous » et drapeau GOAL_PACE
+src/app/components/Stadium.tsx            → piste 400 m vue de haut (SVG), coureurs et feux de cadence animés (requestAnimationFrame, figés si mouvement réduit)
+src/app/components/RaceResults.tsx        → classement à l'arrivée sur votre distance + bracelet d'allure
+src/app/components/RaceBib.tsx            → dossard : numéro d'instance, CLUB_NAME, APP_ENV, GOAL_PACE, puce = lien de partage, heure d'écriture du hook
+src/app/components/PlatformPanel.tsx      → Running on Clever Cloud (7 variables plateforme)
+src/app/components/StaticRuntime.tsx      → photo-finish (Resource Timing), homologation (HEAD sur la page et le bundle), config.json
 src/app/components/clever/CleverLogo.tsx  → logo officiel Clever Cloud (SVG inline JSX)
 src/app/components/clever/CleverBadge.tsx → médaillon « Certified · Clever Cloud · Academy »
 src/app/components/clever/CleverTopbar.tsx→ barre de marque (nom démo, pill stack, live/local, Se certifier)
-src/app/components/clever/CleverCert.tsx  → bloc certification complet (2 parcours + CTA)
+src/app/components/clever/CleverCert.tsx  → bloc certification en médaille de podium (ruban, badge, 2 parcours + CTA)
 src/app/components/clever/CleverFooter.tsx→ pied de page plateforme (doc Static, Console, Academy, GitHub)
 src/app/components/DistanceSelector.tsx   → sélecteur de distance
 src/app/components/RankBadge.tsx          → couleurs et messages des rangs
-src/app/utils/calculations.ts             → allure, rang, percentile, échelle de la piste, points de passage
+src/app/utils/calculations.ts             → allure, rang, percentile, échelle des rangs, points de passage
 src/styles/cc-brand.css                   → kit partagé, copié tel quel — NE PAS MODIFIER
 src/styles/index.css                      → styles spécifiques RunRank (classes rr-*)
 src/styles/fonts.css / theme.css          → alias polices et pont Tailwind → tokens --cc-*
@@ -196,8 +203,8 @@ Pas de liaison GitHub → Clever Cloud (`clever create --github` refusé par l'A
 ## 🎨 Règles de design
 
 - Le kit `src/styles/cc-brand.css` est partagé entre les démos : ne pas l'éditer, ajouter les styles propres dans `src/styles/index.css`.
-- Ordre des blocs : topbar → bandeau → premier écran (allure géante, piste des rangs, bracelet d'allure, dossard) → bloc certification → section Variables → footer. Le premier écran montre le produit, pas un héro marketing.
-- Textes UI en français ; couleurs via les tokens `--cc-*` ; polices Plus Jakarta Sans / JetBrains Mono chargées par le `<head>` de `index.html`.
+- Ordre des blocs : topbar → panneau LED → stade (tableau d'affichage dans la pelouse ≥ 1080 px, au-dessus de la piste en dessous) → classement, bracelet, dossard → bloc certification → section runtime Static / Variables → footer. Le premier écran montre le produit, pas un héro marketing.
+- Textes UI en français ; couleurs via les tokens `--cc-*` (plus `--rr-*` pour le stade) ; polices Plus Jakarta Sans / JetBrains Mono / Doto (axe ROND : LED rondes) chargées par le `<head>` de `index.html`.
 - Les couleurs des rangs (`RankBadge.tsx`) sont propres au jeu RunRank et restent inchangées.
 
 ---
@@ -215,11 +222,11 @@ Pas de liaison GitHub → Clever Cloud (`clever create --github` refusé par l'A
 
 ## 🎬 Scénario vidéo
 
-1. Ouvrir l'app : « Votre 10 km en 48:30, c'est 4:51 /km », rang Platinum, dossard 001 pour l'instance #0 (INSTANCE_NUMBER + 1).
-2. Changer la distance / le temps : l'allure, la piste et le bracelet suivent en direct. Lien partageable `?d=42.195&t=2:59:30`.
+1. Ouvrir l'app : le tableau d'affichage du stade dit « Votre 10 km en 48:30, c'est 4:51 /km », rang Platinum ; « Vous » tourne sur la piste à côté du lièvre élite, du marathonien du dimanche et des feux de cadence verts ; dossard 001 pour l'instance #0 (INSTANCE_NUMBER + 1).
+2. Changer l'épreuve / le temps sur le tableau : l'allure, le rang, la vitesse de « Vous », le classement et le bracelet suivent en direct. Lien partageable imprimé sur le dossard, ex. `?d=42.195&t=2:59:30`.
 3. Console Clever → Variables : poser `ANNOUNCEMENT`, `CLUB_NAME="Les Foulées Nantaises"`, `GOAL_PACE=4:30`, `APP_ENV=production`.
-4. `clever restart`, recharger : bandeau, nom du club sur le dossard, drapeau déplacé (« encore 21 s/km à gagner »), pastille production, pied du dossard « écrit par CC_PRE_RUN_HOOK à hh:mm:ss ».
-5. Descendre au bloc certification (bouton « Se certifier Clever Cloud ↓ ») puis à la section Variables qui affiche le `config.json` servi.
+4. `clever restart`, recharger : panneau LED défilant, nom du club sur le dossard, feux de cadence plus rapides que « Vous » et drapeau déplacé (« encore 21 s/km à gagner »), pastille production, pied du dossard « écrit par CC_PRE_RUN_HOOK à hh:mm:ss ».
+5. Descendre au bloc certification (bouton « Se certifier Clever Cloud ↓ »), puis à « Ce que fait le runtime Static » : photo-finish des fichiers servis, fiche d'homologation tamponnée, et la feuille de départ qui affiche le `config.json` servi.
 
 ### Tester les variables en local
 
@@ -227,7 +234,7 @@ Pas de liaison GitHub → Clever Cloud (`clever create --github` refusé par l'A
 npm run build
 APP_ENV=production ANNOUNCEMENT="Démo live" CLUB_NAME="Les Foulées Nantaises" GOAL_PACE=4:30 \
   INSTANCE_NUMBER=1 APP_ID=app_demo sh scripts/write-config.sh   # écrit dist/config.json
-npx vite preview --port 8102
+PORT=8502 caddy run --config Caddyfile --adapter caddyfile   # en-têtes réels (vite preview n'en pose aucun : « Non homologué »)
 npm run build   # remet le dist/config.json par défaut avant de committer
 ```
 
