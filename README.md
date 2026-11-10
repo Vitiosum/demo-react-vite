@@ -2,6 +2,8 @@
 
 > A night at the track. Pick a race and type your time on the stadium's LED scoreboard: your pace lights up in amber dots, your rank (Iron to Challenger) in its own colour, and around it you circle a 400 m track seen from above, next to an elite hare (the 2-hour marathon), a Sunday marathoner and the club's green pacing lights running at `GOAL_PACE`. Your share link becomes a race bib. React 18, Vite 8 and TypeScript, built on your machine and committed in `dist/`: the **Clever Cloud Static runtime** serves it as-is, with no remote build and no application process. The page proves it: a photo-finish of the files it just received, the security headers it reads on itself, and the `config.json` a pre-run hook wrote before the start.
 
+![A 12-second loop of the stadium run locally: typing 42 minutes on the LED scoreboard turns a 10 km into 4:15 /km and Diamond, switching to a marathon in 3:15:00 gives 4:37 /km and Platinum, and the runner on the track changes speed each time](docs/tour.gif)
+
 ![The stadium run locally: a 10 km in 48:30 is 4:51 /km on the LED scoreboard, Platinum, with the demo variables written by scripts/write-config.sh (LED ribbon, club goal 4:30, so 21 s/km to gain); you, the hares and the green pacing lights circle the floodlit track](docs/screenshot-desktop.png)
 
 <img src="docs/screenshot-phone.png" alt="A share link opened on a phone, run locally: a marathon in 2:59:30 is 4:15 /km, Diamond, above the 400 m track" width="300">
